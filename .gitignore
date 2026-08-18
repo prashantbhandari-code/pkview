@@ -1,0 +1,7 @@
+# Ignore everything except our files
+*
+!index.html
+!style.css
+!script_main.js
+!start_cinephile.bat
+!.gitignore
