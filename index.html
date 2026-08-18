@@ -22,25 +22,36 @@
       <form id="form">
         <input type="text" id="search" class="search" placeholder="Search" />
       </form>
-      <div class="pageChange">
-        <svg
-          class="switch icon icon-tabler icon-tabler-device-desktop"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          stroke-width="2"
-          stroke="#7378c5"
-          fill="none"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-          <path
-            d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z"
-          ></path>
-          <path d="M7 20l10 0"></path>
-          <path d="M9 16l0 4"></path>
-          <path d="M15 16l0 4"></path>
-        </svg>
+      <div class="header-controls">
+        <div class="pageChange">
+          <svg
+            class="switch icon icon-tabler icon-tabler-device-desktop"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="#7378c5"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+            <path
+              d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z"
+            ></path>
+            <path d="M7 20l10 0"></path>
+            <path d="M9 16l0 4"></path>
+            <path d="M15 16l0 4"></path>
+          </svg>
+        </div>
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
       </div>
     </header>
 
@@ -104,13 +115,21 @@
             <button class="close-stream" onclick="closeStream()">&times;</button>
           </div>
         </div>
-        <div class="server-tabs">
+       <div class="server-tabs">
           <button class="server-tab active" data-server="0">SuperEmbed (HD)</button>
           <button class="server-tab" data-server="1">VidSrc</button>
           <button class="server-tab" data-server="2">YapGrid</button>
           <button class="server-tab" data-server="3">EmbedMaster</button>
           <button class="server-tab" data-server="4">VidCore</button>
           <button class="server-tab" data-server="5">ezvidapi</button>
+        </div>
+        <div class="season-select-container" id="seasonSelectContainer" style="display:none;">
+          <div class="season-selector">
+            <label for="seasonSelect">Season:</label>
+            <select id="seasonSelect" class="lang-select"></select>
+            <label for="episodeSelect">Episode:</label>
+            <select id="episodeSelect" class="lang-select"></select>
+          </div>
         </div>
         <div class="stream-player">
           <iframe id="streamFrame" src="" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
@@ -126,6 +145,34 @@
         </div>
       </div>
     </div>
+
+    <!-- Season/Episode Selector Modal for TV Shows -->
+    <div id="seasonModal" class="season-modal">
+      <div class="season-modal-content">
+        <div class="season-header">
+          <h3 id="seasonTitle">Select Episode</h3>
+          <button class="close-season" onclick="closeSeasonModal()">&times;</button>
+        </div>
+        <div class="season-grid" id="seasonGrid"></div>
+      </div>
+    </div>
+
+    <!-- Watch History Section -->
+    <section id="watchHistorySection" class="content-section" style="display:none;">
+      <div class="section-header">
+        <h2>Continue Watching</h2>
+      </div>
+      <div class="content-grid" id="watchHistoryGrid"></div>
+    </section>
+
+    <!-- Favorites Section -->
+    <section id="favoritesSection" class="content-section" style="display:none;">
+      <div class="section-header">
+        <h2>My List</h2>
+        <button class="clear-all" id="clearFavorites" onclick="clearFavorites()" style="display:none;">Clear All</button>
+      </div>
+      <div class="content-grid" id="favoritesGrid"></div>
+    </section>
 
     <main id="main"></main>
 
