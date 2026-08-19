@@ -31,37 +31,37 @@ const genres = [
     { "id": 37, "name": "Western" }
 ];
 
-// Streaming servers configuration (verified working)
+// Streaming servers configuration (ad-free, 1080p)
 const STREAMING_SERVERS = [
-    {
-        name: 'VidSrc',
-        movie: (id) => `https://vidsrc.cc/embed/movie?tmdb=${id}`,
-        tv: (id, s, e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}`
-    },
-    {
-        name: 'EmbedMaster',
-        movie: (id) => `https://embedmaster.link/movie/${id}`,
-        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`
-    },
-    {
-        name: 'VidCore',
-        movie: (id) => `https://vidcore.org/embed/movie/${id}`,
-        tv: (id, s, e) => `https://vidcore.org/embed/tv/${id}/${s}/${e}`
-    },
     {
         name: 'ezvidapi',
         movie: (id) => `https://ezvidapi.com/embed/movie/${id}`,
         tv: (id, s, e) => `https://ezvidapi.com/embed/tv/${id}/${s}/${e}`
     },
     {
-        name: 'CineSrc',
-        movie: (id) => `https://cinesrc.st/embed/movie/${id}`,
-        tv: (id, s, e) => `https://cinesrc.st/embed/tv/${id}?s=${s}&e=${e}`
+        name: 'VidLink',
+        movie: (id) => `https://vidlink.pro/movie/${id}`,
+        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
     },
     {
-        name: '2Embed',
-        movie: (id) => `https://2embed.skin/embed/${id}`,
-        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
+        name: 'VidNest',
+        movie: (id) => `https://vidnest.fun/movie/${id}`,
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'VidPhantom',
+        movie: (id) => `https://vidphantom.com/movie/${id}`,
+        tv: (id, s, e) => `https://vidphantom.com/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'AutoEmbed',
+        movie: (id) => `https://autoembed.co/movie/tmdb/${id}`,
+        tv: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}`
+    },
+    {
+        name: 'EmbedMaster',
+        movie: (id) => `https://embedmaster.link/movie/${id}`,
+        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`
     }
 ];
 
