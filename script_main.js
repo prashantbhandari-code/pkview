@@ -9,6 +9,83 @@ const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_
 const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const SPORTS_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=10769&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=10';
+const SPORTS_API = 'https://api.embedsportex.fun/api';
+
+// Live sports data and stream player
+let liveSportsData = null;
+
+async function loadLiveSports() {
+    const container = document.getElementById('liveSportsContainer');
+    if (!container) return;
+
+    try {
+        const res = await fetch(SPORTS_API);
+        const data = await res.json();
+        liveSportsData = data;
+        renderLiveSports(container, data);
+    } catch (e) {
+        container.innerHTML = '<div style="color: #888; padding: 20px;">No live matches right now</div>';
+    }
+}
+
+function renderLiveSports(container, data) {
+    const sports = ['cricket', 'football', 'basketball', 'tennis', 'hockey'];
+    let matches = [];
+
+    sports.forEach(sport => {
+        if (data[sport] && Array.isArray(data[sport])) {
+            data[sport].forEach(match => {
+                if (match.iframes && match.iframes.length > 0) {
+                    matches.push({ ...match, sport });
+                }
+            });
+        }
+    });
+
+    if (matches.length === 0) {
+        container.innerHTML = '<div style="color: #888; padding: 20px;">No live matches right now. Check back later!</div>';
+        return;
+    }
+
+    container.innerHTML = matches.map((match, i) => {
+        const sportEmoji = { cricket: '🏏', football: '⚽', basketball: '🏀', tennis: '🎾', hockey: '🏒' }[match.sport] || '🏆';
+        return `
+        <div class="live-match-card" onclick="openLiveMatch(${i})" style="min-width:180px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #e94560; border-radius: 12px; padding: 14px; cursor: pointer; flex-shrink: 0; transition: transform 0.2s;">
+            <div style="font-size: 28px; margin-bottom: 6px;">${sportEmoji}</div>
+            <div style="font-weight: 600; font-size: 12px; color: #fff; margin-bottom: 4px;">${match.tag || match.league || 'Live Match'}</div>
+            <div style="font-size: 11px; color: #aaa;">${match.league || ''}</div>
+            <div style="font-size: 11px; color: #e94560; margin-top: 4px;">LIVE NOW</div>
+        </div>`;
+    }).join('');
+
+    window._liveMatches = matches;
+}
+
+function openLiveMatch(index) {
+    const match = window._liveMatches && window._liveMatches[index];
+    if (!match || !match.iframes || match.iframes.length === 0) return;
+
+    const streamUrl = match.iframes[0].url;
+    const modal = document.getElementById('streamModal');
+    const streamFrame = document.getElementById('streamFrame');
+    const serverTabs = document.querySelector('.server-tabs');
+    const errorMsg = document.getElementById('serverError');
+    const seasonContainer = document.getElementById('seasonSelectContainer');
+    const trailerBtn = document.getElementById('trailerBtn');
+    const trailerPlayer = document.getElementById('trailerPlayer');
+
+    if (serverTabs) serverTabs.style.display = 'none';
+    if (seasonContainer) seasonContainer.style.display = 'none';
+    if (trailerBtn) trailerBtn.style.display = 'none';
+    if (trailerPlayer) trailerPlayer.style.display = 'none';
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    streamFrame.src = streamUrl;
+    streamFrame.style.display = 'block';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    window._sportsChannelClose = true;
+}
 
 const genres = [
     { "id": 28, "name": "Action" },
@@ -286,6 +363,7 @@ function switchSection(section) {
     } else if (section === 'sports') {
         currentSection = 'sports';
         LoadMovieOrTv('tv', SPORTS_url);
+        loadLiveSports();
     }
 }
 
@@ -883,6 +961,13 @@ function closeStream() {
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
     document.body.style.overflow = '';
+
+    // Restore server tabs if hidden by sports live match
+    const serverTabs = document.querySelector('.server-tabs');
+    if (serverTabs && window._sportsChannelClose) {
+        serverTabs.style.display = 'flex';
+        window._sportsChannelClose = false;
+    }
 }
 
 // Close season modal
