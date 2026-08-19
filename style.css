@@ -1423,3 +1423,48 @@ body.light-theme .episode-btn.watched {
     padding: 6px;
   }
 }
+
+/* Live Sports Mobile Styles */
+@media screen and (max-width: 768px) {
+  #liveSportsContainer {
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+  }
+  
+  .live-match-card {
+    min-width: 140px !important;
+    scroll-snap-align: start;
+    touch-action: pan-x;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .live-match-card:active {
+    transform: scale(0.96);
+  }
+
+  #sportsChannelsSection {
+    padding: 10px 12px !important;
+  }
+
+  #sportsChannelsSection h2 {
+    font-size: 1rem !important;
+  }
+}
+
+/* Fix iframe on mobile */
+@media screen and (max-width: 480px) {
+  .stream-player {
+    padding-bottom: 75% !important;
+  }
+  
+  .stream-modal.active {
+    padding: 0 !important;
+  }
+
+  .stream-modal-content {
+    margin-top: 0 !important;
+    border-radius: 0 !important;
+    min-height: 100vh !important;
+  }
+}
