@@ -510,17 +510,28 @@ function searchResultsAndDisplayWrapper(ev) {
     let whichPage = localStorage.getItem('page');
 
     if (ev.target.value == '') {
-        if (whichPage == 'movie') {
+        if (currentSection === 'bollywood') {
+            LoadMovieOrTv('movie', BOLLYWOOD_url);
+        } else if (currentSection === 'anime') {
+            LoadMovieOrTv('tv', ANIME_url);
+        } else if (whichPage == 'movie') {
             LoadMovieOrTv(whichPage, API_url);
         } else if (whichPage == 'tv') {
             LoadMovieOrTv(whichPage, TV_url);
         }
     } else {
-        if (whichPage == 'movie') {
-            let url_search = SEARCH_url + ev.target.value;
+        let searchQuery = ev.target.value;
+        if (currentSection === 'bollywood') {
+            let url_search = SEARCH_url + searchQuery + '&with_original_language=hi';
+            LoadMovieOrTv('movie', url_search);
+        } else if (currentSection === 'anime') {
+            let url_search = TV_Search_url + searchQuery + '&with_original_language=ja';
+            LoadMovieOrTv('tv', url_search);
+        } else if (whichPage == 'movie') {
+            let url_search = SEARCH_url + searchQuery;
             LoadMovieOrTv(whichPage, url_search);
         } else if (whichPage == 'tv') {
-            let url_search = TV_Search_url + ev.target.value;
+            let url_search = TV_Search_url + searchQuery;
             LoadMovieOrTv(whichPage, url_search);
         }
     }
@@ -669,15 +680,13 @@ function openStream(item) {
     currentServerIndex = 0;
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
-    const whichPage = localStorage.getItem('page') || (item.media_type === 'tv' ? 'tv' : 'movie');
 
-    title.textContent = whichPage === 'movie' ? (item.title || item.name) : item.name;
+    title.textContent = item.title || item.name;
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
     // Handle TV show season/episode selection
-    const watchNowBtn = document.querySelector('.watchnow');
-    if (whichPage === 'tv') {
+    if (item.media_type === 'tv') {
         document.getElementById('seasonSelectContainer').style.display = 'flex';
         loadSeasonEpisode(item.id);
     } else {
@@ -747,11 +756,10 @@ function loadServer(index) {
     currentServerIndex = index;
     const frame = document.getElementById('streamFrame');
     const errorMsg = document.getElementById('serverError');
-    const whichPage = localStorage.getItem('page');
     if (!currentStreamItem) return;
 
     let url;
-    if (currentStreamItem.media_type === 'tv' || whichPage === 'tv') {
+    if (currentStreamItem.media_type === 'tv') {
         url = STREAMING_SERVERS[index].tv(currentStreamItem.id, currentSeason, currentEpisode);
     } else {
         url = STREAMING_SERVERS[index].movie(currentStreamItem.id);
