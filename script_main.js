@@ -8,6 +8,7 @@ const TV_Search_url = 'https://api.themoviedb.org/3/search/tv?' + API_key + '&qu
 const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=50';
 const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
+const SPORTS_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=10769&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=10';
 
 const genres = [
     { "id": 28, "name": "Action" },
@@ -74,7 +75,7 @@ let currentEpisode = 1;
 let watchHistory = JSON.parse(localStorage.getItem('pkview_history') || '[]');
 let favorites = JSON.parse(localStorage.getItem('pkview_favorites') || '[]');
 let selectedGenre = [];
-let currentSection = 'home'; // home, bollywood, anime
+let currentSection = 'home'; // home, bollywood, anime, sports
 var currentPage = 1;
 var nextPage = 2;
 var prevPage = 3;
@@ -236,6 +237,15 @@ function setupNavigation() {
             switchSection(section);
         });
     });
+
+    // Sports channel click handlers
+    document.querySelectorAll('.sports-channel-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            e.preventDefault();
+            const channel = card.dataset.channel;
+            openSportsChannel(channel);
+        });
+    });
 }
 
 function switchSection(section) {
@@ -259,6 +269,12 @@ function switchSection(section) {
         genreSection.style.display = 'none';
     }
 
+    // Show/hide sports channels
+    const sportsChannels = document.getElementById('sportsChannelsSection');
+    if (sportsChannels) {
+        sportsChannels.style.display = section === 'sports' ? 'block' : 'none';
+    }
+
     // Load appropriate content
     if (section === 'home') {
         let whichPage = localStorage.getItem('page');
@@ -269,6 +285,9 @@ function switchSection(section) {
     } else if (section === 'anime') {
         currentSection = 'anime';
         LoadMovieOrTv('tv', ANIME_url);
+    } else if (section === 'sports') {
+        currentSection = 'sports';
+        LoadMovieOrTv('tv', SPORTS_url);
     }
 }
 
@@ -522,6 +541,8 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', BOLLYWOOD_url);
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
+        } else if (currentSection === 'sports') {
+            LoadMovieOrTv('tv', SPORTS_url);
         } else if (whichPage == 'movie') {
             LoadMovieOrTv(whichPage, API_url);
         } else if (whichPage == 'tv') {
@@ -534,6 +555,9 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', url_search);
         } else if (currentSection === 'anime') {
             let url_search = TV_Search_url + searchQuery + '&with_original_language=ja';
+            LoadMovieOrTv('tv', url_search);
+        } else if (currentSection === 'sports') {
+            let url_search = TV_Search_url + searchQuery + '&with_original_language=hi';
             LoadMovieOrTv('tv', url_search);
         } else if (whichPage == 'movie') {
             let url_search = SEARCH_url + searchQuery;
@@ -842,6 +866,41 @@ function toggleTrailer(key) {
     }
 }
 
+// Open sports channel in modal
+const SPORTS_CHANNELS = {
+    starsportshindi: { name: 'Star Sports Hindi', url: 'https://www.jiocinema.com/tv-shows/star-sports-hindi' },
+    sonytensports: { name: 'Sony TEN Sports', url: 'https://www.jiocinema.com/tv-shows/sony-ten-1-hd' },
+    jspacelive: { name: 'JioSports', url: 'https://www.jiocinema.com/tv-shows/jiosports' },
+    ddsports: { name: 'DD Sports', url: 'https://www.jiocinema.com/tv-shows/dd-sports' }
+};
+
+function openSportsChannel(channel) {
+    const channelData = SPORTS_CHANNELS[channel];
+    if (!channelData) return;
+
+    const modal = document.getElementById('streamModal');
+    const streamFrame = document.getElementById('streamFrame');
+    const serverTabs = document.querySelector('.server-tabs');
+    const errorMsg = document.getElementById('serverError');
+    const seasonContainer = document.getElementById('seasonSelectContainer');
+    const trailerBtn = document.getElementById('trailerBtn');
+    const trailerPlayer = document.getElementById('trailerPlayer');
+
+    if (serverTabs) serverTabs.style.display = 'none';
+    if (seasonContainer) seasonContainer.style.display = 'none';
+    if (trailerBtn) trailerBtn.style.display = 'none';
+    if (trailerPlayer) trailerPlayer.style.display = 'none';
+    errorMsg.style.display = 'none';
+
+    streamFrame.src = channelData.url;
+    streamFrame.style.display = 'block';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Override closeStream for sports channels
+    window._sportsChannelClose = true;
+}
+
 // Close streaming modal
 function closeStream() {
     const modal = document.getElementById('streamModal');
@@ -861,6 +920,13 @@ function closeStream() {
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
     document.body.style.overflow = '';
+
+    // Restore server tabs if they were hidden
+    const serverTabs = document.querySelector('.server-tabs');
+    if (serverTabs && window._sportsChannelClose) {
+        serverTabs.style.display = 'flex';
+        window._sportsChannelClose = false;
+    }
 }
 
 // Close season modal
