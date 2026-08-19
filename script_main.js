@@ -408,6 +408,7 @@ function showMovies(data) {
         const { title, poster_path, vote_average, overview, release_date, id } = movie;
         const movieEl = document.createElement('div');
         movieEl.classList.add('movie');
+        movieEl.dataset.item = JSON.stringify({...movie, media_type: 'movie'});
 
         movieEl.innerHTML = `
         <div>
@@ -428,25 +429,15 @@ function showMovies(data) {
         <h3>${title}</h3>
         <span class="overview-content">${overview}</span>
         <br>
-        <button class="watchnow" onclick="openStream(${JSON.stringify({...movie, media_type: 'movie'})})">Watch Now</button>
+        <button class="watchnow">Watch Now</button>
         </span>
         </div>
         `;
         main.appendChild(movieEl);
     });
 
-    // Add favorite button listeners
-    document.querySelectorAll('.favorite-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = parseInt(btn.dataset.id);
-            const type = btn.dataset.type;
-            toggleFavorite(id, type);
-        });
-    });
-
-    // Update favorite button states
-    updateFavoriteButtons();
+    setupWatchButtons();
+    setupFavoriteButtons();
 }
 
 function showTvShows(data) {
@@ -457,6 +448,7 @@ function showTvShows(data) {
         const { name, overview, poster_path, vote_average, first_air_date, id } = tvshow;
         const tvEl = document.createElement('div');
         tvEl.classList.add('tvshow');
+        tvEl.dataset.item = JSON.stringify({...tvshow, media_type: 'tv'});
 
         tvEl.innerHTML = `
       <div>
@@ -476,14 +468,31 @@ function showTvShows(data) {
     <h3>${name}</h3>
     <span class="overview-content">${overview}</span>
     <br>
-    <button class="watchnow" onclick="openStream(${JSON.stringify({...tvshow, media_type: 'tv'})})">Watch Now</button>
+    <button class="watchnow">Watch Now</button>
     </span>
    </div>
     `;
         main.appendChild(tvEl);
     });
 
-    // Add favorite button listeners
+    setupWatchButtons();
+    setupFavoriteButtons();
+}
+
+function setupWatchButtons() {
+    document.querySelectorAll('.watchnow').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.movie, .tvshow');
+            if (card && card.dataset.item) {
+                const item = JSON.parse(card.dataset.item);
+                openStream(item);
+            }
+        });
+    });
+}
+
+function setupFavoriteButtons() {
     document.querySelectorAll('.favorite-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -492,7 +501,6 @@ function showTvShows(data) {
             toggleFavorite(id, type);
         });
     });
-
     updateFavoriteButtons();
 }
 
@@ -600,12 +608,18 @@ function loadWatchHistory() {
     grid.innerHTML = '';
 
     watchHistory.slice(0, 6).forEach(item => {
-        grid.innerHTML += `
-        <div class="movie" onclick="openStream(${JSON.stringify({...item, media_type: item.type})})">
+        const div = document.createElement('div');
+        div.classList.add('movie');
+        div.dataset.item = JSON.stringify({...item, media_type: item.type});
+        div.innerHTML = `
             <img src="${item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${item.title}">
             <div class="movie-info"><h3>${item.title}</h3></div>
-        </div>
         `;
+        div.addEventListener('click', () => {
+            const data = JSON.parse(div.dataset.item);
+            openStream(data);
+        });
+        grid.appendChild(div);
     });
 }
 
@@ -659,13 +673,18 @@ function loadFavorites() {
         fetch(url)
             .then(res => res.json())
             .then(data => {
-                grid.innerHTML += `
-                <div class="movie" onclick="openStream(${JSON.stringify({...data, media_type: item.type})})">
+                const div = document.createElement('div');
+                div.classList.add('movie');
+                div.dataset.item = JSON.stringify({...data, media_type: item.type});
+                div.innerHTML = `
                     <img src="${data.poster_path ? IMG_url + data.poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${data.title || data.name}">
                     <div class="movie-info"><h3>${data.title || data.name}</h3></div>
-                </div>
                 `;
-                // Update favorite button states
+                div.addEventListener('click', () => {
+                    const streamData = JSON.parse(div.dataset.item);
+                    openStream(streamData);
+                });
+                grid.appendChild(div);
                 updateFavoriteButtons();
             })
             .catch(err => console.error('Error loading favorite:', err));
