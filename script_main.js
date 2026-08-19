@@ -5,6 +5,9 @@ const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SEARCH_url = 'https://api.themoviedb.org/3/search/movie?api_key=4b153b123319df27bb67fcbfe219537d&query=';
 const TV_url = BASE_url + '/tv/popular?' + API_key + '&vote_count.gte=100';
 const TV_Search_url = 'https://api.themoviedb.org/3/search/tv?' + API_key + '&query=';
+const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=50';
+const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
+const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 
 const genres = [
     { "id": 28, "name": "Action" },
@@ -71,6 +74,7 @@ let currentEpisode = 1;
 let watchHistory = JSON.parse(localStorage.getItem('pkview_history') || '[]');
 let favorites = JSON.parse(localStorage.getItem('pkview_favorites') || '[]');
 let selectedGenre = [];
+let currentSection = 'home'; // home, bollywood, anime
 var currentPage = 1;
 var nextPage = 2;
 var prevPage = 3;
@@ -83,6 +87,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     setGenres();
     loadThemePreference();
     setupHeaderControls();
+    setupNavigation();
 
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
@@ -220,6 +225,51 @@ function setGenres() {
         });
         tags_el.append(t);
     });
+}
+
+function setupNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const section = link.dataset.section;
+            switchSection(section);
+        });
+    });
+}
+
+function switchSection(section) {
+    currentSection = section;
+    selectedGenre = [];
+    currentPage = 1;
+
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.section === section) {
+            link.classList.add('active');
+        }
+    });
+
+    // Show/hide genre tags based on section
+    const genreSection = document.querySelector('.scrollable-tabs-container');
+    if (section === 'home') {
+        genreSection.style.display = 'flex';
+    } else {
+        genreSection.style.display = 'none';
+    }
+
+    // Load appropriate content
+    if (section === 'home') {
+        let whichPage = localStorage.getItem('page');
+        LoadDataAndDisplay();
+    } else if (section === 'bollywood') {
+        currentSection = 'bollywood';
+        LoadMovieOrTv('movie', BOLLYWOOD_url);
+    } else if (section === 'anime') {
+        currentSection = 'anime';
+        LoadMovieOrTv('tv', ANIME_url);
+    }
 }
 
 const manageIcons = () => {
