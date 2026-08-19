@@ -31,12 +31,22 @@ const genres = [
     { "id": 37, "name": "Western" }
 ];
 
-// Streaming servers configuration (ad-free, 1080p)
+// Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
-        name: 'ezvidapi',
-        movie: (id) => `https://ezvidapi.com/embed/movie/${id}`,
-        tv: (id, s, e) => `https://ezvidapi.com/embed/tv/${id}/${s}/${e}`
+        name: 'VidNest',
+        movie: (id) => `https://vidnest.fun/movie/${id}`,
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'EmbedMaster',
+        movie: (id) => `https://embedmaster.link/movie/${id}`,
+        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'YapGrid',
+        movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
+        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`
     },
     {
         name: 'VidLink',
@@ -44,24 +54,14 @@ const STREAMING_SERVERS = [
         tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
     },
     {
-        name: 'VidNest',
-        movie: (id) => `https://vidnest.fun/movie/${id}`,
-        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`
-    },
-    {
         name: 'VidPhantom',
         movie: (id) => `https://vidphantom.com/movie/${id}`,
         tv: (id, s, e) => `https://vidphantom.com/tv/${id}/${s}/${e}`
     },
     {
-        name: 'AutoEmbed',
-        movie: (id) => `https://autoembed.co/movie/tmdb/${id}`,
-        tv: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}`
-    },
-    {
-        name: 'EmbedMaster',
-        movie: (id) => `https://embedmaster.link/movie/${id}`,
-        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`
+        name: '2Embed',
+        movie: (id) => `https://2embed.skin/embed/${id}`,
+        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
     }
 ];
 
