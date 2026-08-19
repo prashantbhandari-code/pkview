@@ -4,4 +4,7 @@
 !style.css
 !script_main.js
 !start_cinephile.bat
+!package.json
+!package-lock.json
+!server.js
 !.gitignore
