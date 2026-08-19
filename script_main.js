@@ -241,9 +241,7 @@ function setupNavigation() {
     // Sports channel click handlers
     document.querySelectorAll('.sports-channel-card').forEach(card => {
         card.addEventListener('click', (e) => {
-            e.preventDefault();
-            const channel = card.dataset.channel;
-            openSportsChannel(channel);
+            // Let the default link behavior work (opens YouTube)
         });
     });
 }
@@ -866,41 +864,6 @@ function toggleTrailer(key) {
     }
 }
 
-// Open sports channel in modal
-const SPORTS_CHANNELS = {
-    starsportshindi: { name: 'Star Sports Hindi', url: 'https://www.jiocinema.com/tv-shows/star-sports-hindi' },
-    sonytensports: { name: 'Sony TEN Sports', url: 'https://www.jiocinema.com/tv-shows/sony-ten-1-hd' },
-    jspacelive: { name: 'JioSports', url: 'https://www.jiocinema.com/tv-shows/jiosports' },
-    ddsports: { name: 'DD Sports', url: 'https://www.jiocinema.com/tv-shows/dd-sports' }
-};
-
-function openSportsChannel(channel) {
-    const channelData = SPORTS_CHANNELS[channel];
-    if (!channelData) return;
-
-    const modal = document.getElementById('streamModal');
-    const streamFrame = document.getElementById('streamFrame');
-    const serverTabs = document.querySelector('.server-tabs');
-    const errorMsg = document.getElementById('serverError');
-    const seasonContainer = document.getElementById('seasonSelectContainer');
-    const trailerBtn = document.getElementById('trailerBtn');
-    const trailerPlayer = document.getElementById('trailerPlayer');
-
-    if (serverTabs) serverTabs.style.display = 'none';
-    if (seasonContainer) seasonContainer.style.display = 'none';
-    if (trailerBtn) trailerBtn.style.display = 'none';
-    if (trailerPlayer) trailerPlayer.style.display = 'none';
-    errorMsg.style.display = 'none';
-
-    streamFrame.src = channelData.url;
-    streamFrame.style.display = 'block';
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    // Override closeStream for sports channels
-    window._sportsChannelClose = true;
-}
-
 // Close streaming modal
 function closeStream() {
     const modal = document.getElementById('streamModal');
@@ -920,13 +883,6 @@ function closeStream() {
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
     document.body.style.overflow = '';
-
-    // Restore server tabs if they were hidden
-    const serverTabs = document.querySelector('.server-tabs');
-    if (serverTabs && window._sportsChannelClose) {
-        serverTabs.style.display = 'flex';
-        window._sportsChannelClose = false;
-    }
 }
 
 // Close season modal
