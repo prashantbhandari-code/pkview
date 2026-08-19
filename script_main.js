@@ -28,22 +28,12 @@ const genres = [
     { "id": 37, "name": "Western" }
 ];
 
-// Streaming servers configuration
+// Streaming servers configuration (verified working)
 const STREAMING_SERVERS = [
-    {
-        name: 'SuperEmbed (HD)',
-        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
-    },
     {
         name: 'VidSrc',
         movie: (id) => `https://vidsrc.cc/embed/movie?tmdb=${id}`,
         tv: (id, s, e) => `https://vidsrc.cc/embed/tv?tmdb=${id}&season=${s}&episode=${e}`
-    },
-    {
-        name: 'YapGrid (Ad-free)',
-        movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
-        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`
     },
     {
         name: 'EmbedMaster',
@@ -59,6 +49,16 @@ const STREAMING_SERVERS = [
         name: 'ezvidapi',
         movie: (id) => `https://ezvidapi.com/embed/movie/${id}`,
         tv: (id, s, e) => `https://ezvidapi.com/embed/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'CineSrc',
+        movie: (id) => `https://cinesrc.st/embed/movie/${id}`,
+        tv: (id, s, e) => `https://cinesrc.st/embed/tv/${id}?s=${s}&e=${e}`
+    },
+    {
+        name: '2Embed',
+        movie: (id) => `https://2embed.skin/embed/${id}`,
+        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
     }
 ];
 
