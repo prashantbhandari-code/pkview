@@ -5,7 +5,7 @@ const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SEARCH_url = 'https://api.themoviedb.org/3/search/movie?api_key=4b153b123319df27bb67fcbfe219537d&query=';
 const TV_url = BASE_url + '/tv/popular?' + API_key + '&vote_count.gte=100';
 const TV_Search_url = 'https://api.themoviedb.org/3/search/tv?' + API_key + '&query=';
-const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=50';
+const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=hi&sort_by=primary_release_date.desc&vote_count.gte=50';
 const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const SPORTS_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=10769&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=10';
