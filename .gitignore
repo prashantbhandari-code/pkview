@@ -7,4 +7,5 @@
 !package.json
 !package-lock.json
 !server.js
+!render.yaml
 !.gitignore
