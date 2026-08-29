@@ -10,6 +10,8 @@ const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_o
 const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
 const SPORTS_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=10769&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=10';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
+const NEPALI_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=ne&sort_by=popularity.desc&vote_count.gte=0';
+const NEPALI_FEATURED_ID = 1423966; // Missing: Keti Harayeko Suchana
 
 // Live sports data and stream player
 let liveSportsData = null;
@@ -350,6 +352,12 @@ function switchSection(section) {
         sportsChannels.style.display = section === 'sports' ? 'block' : 'none';
     }
 
+    // Show/hide nepali featured
+    const nepaliFeatured = document.getElementById('nepaliFeaturedSection');
+    if (nepaliFeatured) {
+        nepaliFeatured.style.display = section === 'nepali' ? 'block' : 'none';
+    }
+
     // Load appropriate content
     if (section === 'home') {
         let whichPage = localStorage.getItem('page');
@@ -357,6 +365,10 @@ function switchSection(section) {
     } else if (section === 'bollywood') {
         currentSection = 'bollywood';
         LoadMovieOrTv('movie', BOLLYWOOD_url);
+    } else if (section === 'nepali') {
+        currentSection = 'nepali';
+        loadNepaliFeatured();
+        LoadMovieOrTv('movie', NEPALI_url);
     } else if (section === 'anime') {
         currentSection = 'anime';
         LoadMovieOrTv('tv', ANIME_url);
@@ -615,6 +627,8 @@ function searchResultsAndDisplayWrapper(ev) {
     if (ev.target.value == '') {
         if (currentSection === 'bollywood') {
             LoadMovieOrTv('movie', BOLLYWOOD_url);
+        } else if (currentSection === 'nepali') {
+            LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
         } else if (currentSection === 'sports') {
@@ -628,6 +642,9 @@ function searchResultsAndDisplayWrapper(ev) {
         let searchQuery = ev.target.value;
         if (currentSection === 'bollywood') {
             let url_search = SEARCH_url + searchQuery + '&with_original_language=hi';
+            LoadMovieOrTv('movie', url_search);
+        } else if (currentSection === 'nepali') {
+            let url_search = SEARCH_url + searchQuery + '&with_original_language=ne';
             LoadMovieOrTv('movie', url_search);
         } else if (currentSection === 'anime') {
             let url_search = TV_Search_url + searchQuery + '&with_original_language=ja';
@@ -657,6 +674,37 @@ function searchAndDisplay(func, delay) {
 }
 
 const searchStart = searchAndDisplay(searchResultsAndDisplayWrapper, 900);
+
+// Nepali featured movie banner
+async function loadNepaliFeatured() {
+    const container = document.getElementById('nepaliFeatured');
+    if (!container) return;
+
+    try {
+        const res = await fetch(BASE_url + '/movie/' + NEPALI_FEATURED_ID + '?' + API_key);
+        const movie = await res.json();
+
+        container.innerHTML = `
+            <div style="display: flex; align-items: center; width: 100%; min-height: 300px;">
+                <img src="${movie.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + movie.backdrop_path : ''}"
+                     alt="${movie.title}"
+                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4;">
+                <div style="position: relative; z-index: 2; padding: 40px; max-width: 600px;">
+                    <span style="background: #e94560; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">Featured Nepali Film</span>
+                    <h1 style="color: white; font-size: 32px; margin: 16px 0 8px; text-shadow: 2px 2px 8px rgba(0,0,0,0.6);">${movie.title}</h1>
+                    <p style="color: #ccc; font-size: 14px; margin-bottom: 6px;">${movie.release_date || ''} ${movie.vote_average ? ' · ⭐ ' + movie.vote_average.toFixed(1) : ''}</p>
+                    <p style="color: #ddd; font-size: 14px; line-height: 1.6; margin-bottom: 20px; max-width: 500px;">${movie.overview ? movie.overview.substring(0, 200) + '...' : ''}</p>
+                    <button onclick="openStream(${JSON.stringify(movie).replace(/"/g, '&quot;')}, 'movie')"
+                            style="background: #e94560; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s;">
+                        ▶ Watch Now
+                    </button>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        container.innerHTML = '<div style="color: #888; padding: 40px;">Featured movie unavailable</div>';
+    }
+}
 
 // Theme toggle functionality
 function loadThemePreference() {
@@ -792,10 +840,11 @@ function loadFavorites() {
 }
 
 // Open streaming modal
-function openStream(item) {
+function openStream(item, mediaType) {
     addToHistory(item);
 
     currentStreamItem = item;
+    if (mediaType) currentStreamItem.media_type = mediaType;
     currentServerIndex = 0;
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
