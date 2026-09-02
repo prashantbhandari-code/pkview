@@ -53,9 +53,41 @@ const SPORTS_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 28, sort_by: '
 const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 });
 const KOREAN_TV_url = buildDiscoverUrl('tv', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const KOREAN_MOVIE_url = buildDiscoverUrl('movie', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 100 });
+// Hindi dubbed K-dramas search URLs
+const KOREAN_HINDI_TV_url = tmdbUrl('search/tv?query=korean+drama+hindi&sort_by=popularity.desc');
 const WEB_SERIES_url = buildDiscoverUrl('tv', { with_genres: 18, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
 const DOCU_url = buildDiscoverUrl('tv', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 100 });
+
+// Load Hindi dubbed K-dramas
+async function loadHindiKDramas() {
+    try {
+        // Search for popular Korean dramas with Hindi in title
+        const res = await fetch(KOREAN_HINDI_TV_url);
+        const data = await res.json();
+        
+        if (data.results && data.results.length > 0) {
+            // Filter to only Korean language content (Hindi dubbed K-dramas)
+            const hindiKdramas = data.results.filter(item => 
+                item.original_language === 'ko' || 
+                (item.title && (item.title.includes('Hindi') || item.title.includes('hindi')))
+            );
+            
+            if (hindiKdramas.length > 0) {
+                showTvShows(hindiKdramas);
+            } else {
+                // Fallback to popular K-dramas
+                LoadMovieOrTv('tv', KOREAN_TV_url);
+            }
+        } else {
+            // Fallback to popular K-dramas
+            LoadMovieOrTv('tv', KOREAN_TV_url);
+        }
+    } catch (err) {
+        // Fallback on error
+        LoadMovieOrTv('tv', KOREAN_TV_url);
+    }
+}
 
 
 
@@ -547,7 +579,8 @@ function switchSection(section) {
         LoadMovieOrTv('tv', ANIME_url);
     } else if (section === 'korean') {
         currentSection = 'korean';
-        LoadMovieOrTv('tv', KOREAN_TV_url);
+        // Try Hindi dubbed K-dramas first, fallback to Korean if empty
+        loadHindiKDramas();
     } else if (section === 'webseries') {
         currentSection = 'webseries';
         LoadMovieOrTv('tv', WEB_SERIES_url);
@@ -1070,10 +1103,18 @@ function openStream(item, mediaType) {
     currentServerIndex = 0;
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
+    const langSelect = document.getElementById('languageSelect');
 
     title.textContent = item.title || item.name;
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
+
+    // Default to Hindi for Korean content
+    if (currentSection === 'korean' || (item.original_language === 'ko')) {
+        langSelect.value = 'hi';
+    } else {
+        langSelect.value = 'en';
+    }
 
     // Handle TV show season/episode selection
     if (item.media_type === 'tv') {
