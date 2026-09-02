@@ -301,14 +301,19 @@ const STREAMING_SERVERS = [
         tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
     },
     {
-        name: 'Streamtape',
-        movie: (id) => `https://streamtape.com/e/${id}`,
-        tv: (id, s, e) => `https://streamtape.com/e/${id}`
+        name: 'MultiEmbed',
+        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
+        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
     },
     {
-        name: 'StreamWish',
-        movie: (id) => `https://streamwish.to/e/${id}`,
-        tv: (id, s, e) => `https://streamwish.to/e/${id}`
+        name: 'VidSrc',
+        movie: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`
+    },
+    {
+        name: 'Embed.su',
+        movie: (id) => `https://embed.su/embed/movie/${id}`,
+        tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`
     }
 ];
 
