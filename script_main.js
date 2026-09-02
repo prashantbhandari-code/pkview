@@ -52,71 +52,7 @@ const SPORTS_url = buildDiscoverUrl('tv', { with_genres: 10769, with_original_la
 const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 })
 
 // Drama data
-const DRAMA_DATA = [
-    {
-        id: 'mandap-main-masti',
-        title: 'Mandap Main Masti',
-        genre: 'Drama · Comedy · Romance',
-        description: 'A fun-filled Hindi drama set in the lively atmosphere of a wedding mandap. With twists, turns, and lots of masti, this show keeps you entertained episode after episode.',
-        poster: 'https://img.youtube.com/vi/bRbJYKuDPYE/maxresdefault.jpg',
-        type: 'tv'
-    },
-    {
-        id: 'boss-bangayi-baby',
-        title: 'Boss Bangayi Baby',
-        genre: 'Drama · Comedy · Family',
-        description: 'When the boss becomes a baby, chaos and laughter follow! A unique Hindi drama blending comedy and family emotions in the most unexpected way.',
-        poster: 'https://img.youtube.com/vi/qPGmIa-WQhA/maxresdefault.jpg',
-        type: 'tv'
-    }
-];
 
-function loadDramaSection() {
-    const container = document.getElementById('dramaContainer');
-    if (!container) return;
-    container.innerHTML = '';
-
-    DRAMA_DATA.forEach((drama, index) => {
-        const card = document.createElement('div');
-        card.classList.add('drama-card', 'scale-in');
-        if (index < 4) card.classList.add('stagger-' + (index + 1));
-        card.innerHTML = `
-            <img class="drama-card-img" src="${drama.poster}" alt="${drama.title}" onerror="this.src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'">
-            <div class="drama-card-body">
-                <span class="drama-card-genre">${drama.genre}</span>
-                <h3 class="drama-card-title">${drama.title}</h3>
-                <p class="drama-card-desc">${drama.description}</p>
-                <button class="drama-card-watch" onclick="openDramaStream('${drama.id}')">▶ Watch Now</button>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-function openDramaStream(dramaId) {
-    const drama = DRAMA_DATA.find(d => d.id === dramaId);
-    if (!drama) return;
-
-    // Search TMDB for the drama
-    fetch(buildSearchUrl('tv', drama.title))
-        .then(res => res.json())
-        .then(data => {
-            if (data.results && data.results.length > 0) {
-                const item = data.results[0];
-                item.media_type = 'tv';
-                openStream(item);
-            } else {
-                // Not on TMDB — open first streaming server with search
-                const serverUrl = STREAMING_SERVERS[0].tv('', 1, 1).replace(/\/tv\/\d+\/\d+\/\d+/, '/search/' + encodeURIComponent(drama.title));
-                window.open(serverUrl, '_blank');
-            }
-        })
-        .catch(() => {
-            // Fallback — open first streaming server with search
-            const serverUrl = STREAMING_SERVERS[0].tv('', 1, 1).replace(/\/tv\/\d+\/\d+\/\d+/, '/search/' + encodeURIComponent(drama.title));
-            window.open(serverUrl, '_blank');
-        });
-}
 
 // Live sports data and stream player
 let liveSportsData = null;
@@ -175,25 +111,22 @@ function openLiveMatch(index) {
     if (!match || !match.iframes || match.iframes.length === 0) return;
 
     const streamUrl = match.iframes[0].url;
-    const modal = document.getElementById('streamModal');
-    const streamFrame = document.getElementById('streamFrame');
-    const serverTabs = document.querySelector('.server-tabs');
-    const errorMsg = document.getElementById('serverError');
-    const seasonContainer = document.getElementById('seasonSelectContainer');
-    const trailerBtn = document.getElementById('trailerBtn');
-    const trailerPlayer = document.getElementById('trailerPlayer');
+    const wrapper = document.getElementById('livePlayerWrapper');
+    const frame = document.getElementById('livePlayerFrame');
+    const title = document.getElementById('livePlayerTitle');
 
-    if (serverTabs) serverTabs.style.display = 'none';
-    if (seasonContainer) seasonContainer.style.display = 'none';
-    if (trailerBtn) trailerBtn.style.display = 'none';
-    if (trailerPlayer) trailerPlayer.style.display = 'none';
-    if (errorMsg) errorMsg.style.display = 'none';
+    title.textContent = match.tag || match.league || 'Live Match';
+    frame.src = streamUrl;
+    wrapper.style.display = 'block';
+    wrapper.classList.add('fade-in');
+    wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-    streamFrame.src = streamUrl;
-    streamFrame.style.display = 'block';
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-    window._sportsChannelClose = true;
+function closeLivePlayer() {
+    const wrapper = document.getElementById('livePlayerWrapper');
+    const frame = document.getElementById('livePlayerFrame');
+    frame.src = '';
+    wrapper.style.display = 'none';
 }
 
 const genres = [
@@ -515,12 +448,6 @@ function switchSection(section) {
         sportsChannels.style.display = section === 'sports' ? 'block' : 'none';
     }
 
-    // Show/hide drama section
-    const dramaSection = document.getElementById('dramaSection');
-    if (dramaSection) {
-        dramaSection.style.display = section === 'drama' ? 'block' : 'none';
-    }
-
     // Show/hide nepali featured
     const nepaliFeatured = document.getElementById('nepaliFeaturedSection');
     if (nepaliFeatured) {
@@ -541,9 +468,6 @@ function switchSection(section) {
     } else if (section === 'anime') {
         currentSection = 'anime';
         LoadMovieOrTv('tv', ANIME_url);
-    } else if (section === 'drama') {
-        currentSection = 'drama';
-        loadDramaSection();
     } else if (section === 'sports') {
         currentSection = 'sports';
         LoadMovieOrTv('tv', SPORTS_url);
@@ -817,8 +741,6 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
-        } else if (currentSection === 'drama') {
-            loadDramaSection();
         } else if (currentSection === 'sports') {
             LoadMovieOrTv('tv', SPORTS_url);
         } else if (whichPage == 'movie') {
@@ -831,14 +753,12 @@ function searchResultsAndDisplayWrapper(ev) {
             bollywood: 'movie',
             nepali: 'movie',
             anime: 'tv',
-            drama: 'tv',
             sports: 'tv'
         };
         const langCodeMap = {
             bollywood: 'hi',
             nepali: 'ne',
             anime: 'ja',
-            drama: 'hi',
             sports: 'hi'
         };
 
@@ -1214,13 +1134,6 @@ function closeStream() {
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
     document.body.style.overflow = '';
-
-    // Restore server tabs if hidden by sports live match
-    const serverTabs = document.querySelector('.server-tabs');
-    if (serverTabs && window._sportsChannelClose) {
-        serverTabs.style.display = 'flex';
-        window._sportsChannelClose = false;
-    }
 }
 
 // Close season modal

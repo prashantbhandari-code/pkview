@@ -1390,7 +1390,6 @@ body.light-theme .theme-toggle .moon-icon {
 
 /* ===== Button press effect ===== */
 .watchnow:active,
-.drama-card-watch:active,
 .trailer-btn:active,
 .knowmore:active,
 .nepali-banner-btn:active {
@@ -1586,19 +1585,6 @@ body.light-theme .section-header h2 {
   color: #333;
 }
 
-body.light-theme #dramaContainer .drama-card {
-  background: #ffffff;
-  border-color: #ddd;
-}
-
-body.light-theme #dramaContainer .drama-card-title {
-  color: #333;
-}
-
-body.light-theme #dramaContainer .drama-card-desc {
-  color: #666;
-}
-
 body.light-theme .episode-btn {
   background-color: #f0f0f0;
   color: #333;
@@ -1666,92 +1652,74 @@ body.light-theme .episode-btn.watched {
   }
 }
 
-/* Drama Section */
-.drama-card {
-  min-width: 300px;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
-  border: 1px solid rgba(255, 19, 97, 0.3);
-  border-radius: 16px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.3s, box-shadow 0.3s;
-  flex-shrink: 0;
-}
-
-.drama-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(255, 19, 97, 0.3);
-  border-color: #ff1361;
-}
-
-.drama-card-img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.drama-card-body {
-  padding: 16px;
-}
-
-.drama-card-title {
-  color: #fff;
-  font-size: 1.2rem;
-  font-weight: 600;
-  margin: 0 0 8px;
-}
-
-.drama-card-genre {
-  display: inline-block;
-  background: rgba(255, 19, 97, 0.2);
-  color: #ff1361;
-  padding: 3px 10px;
+/* Inline Live Player */
+.live-player-wrapper {
+  margin-top: 20px;
+  background: #0d1117;
   border-radius: 12px;
-  font-size: 0.75rem;
-  margin-bottom: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 19, 97, 0.3);
 }
 
-.drama-card-desc {
-  color: #aaa;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin: 0;
+.live-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
 }
 
-.drama-card-watch {
-  display: inline-block;
-  margin-top: 12px;
-  background: linear-gradient(135deg, #ff1361, #ff6b35);
+.live-player-title {
   color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.live-player-close {
+  background: none;
   border: none;
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-family: inherit;
-  font-size: 0.85rem;
+  color: #aaa;
+  font-size: 18px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
 }
 
-.drama-card-watch:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(255, 19, 97, 0.4);
+.live-player-close:hover {
+  color: #ff1361;
+  background-color: rgba(255, 19, 97, 0.15);
 }
 
-body.light-theme .drama-card {
-  background: #ffffff;
+.live-player-frame {
+  position: relative;
+  width: 100%;
+  padding-bottom: 56.25%;
+  background: #000;
+}
+
+.live-player-frame iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+body.light-theme .live-player-wrapper {
   border-color: #ddd;
 }
 
-body.light-theme .drama-card:hover {
-  border-color: #ff1361;
-  box-shadow: 0 12px 30px rgba(255, 19, 97, 0.2);
+body.light-theme .live-player-header {
+  background: #f0f0f0;
 }
 
-body.light-theme .drama-card-title {
+body.light-theme .live-player-title {
   color: #333;
 }
 
-body.light-theme .drama-card-desc {
+body.light-theme .live-player-close {
   color: #666;
 }
 
@@ -1801,7 +1769,6 @@ body.light-theme .drama-card-desc {
 }
 
 /* Section visibility classes (hidden by default, toggled by JS) */
-.drama-section,
 .sports-channels-section,
 .nepali-featured-section {
     display: none;
@@ -1859,19 +1826,6 @@ body.light-theme .drama-card-desc {
     font-size: 11px;
     color: #e94560;
     margin-top: 4px;
-}
-
-/* Drama section */
-.drama-section {
-    padding: 20px;
-}
-
-.drama-container {
-    display: flex;
-    gap: 20px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    min-height: 80px;
 }
 
 /* Nepali featured section */

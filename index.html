@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="PKVIEW - Stream movies, TV shows, anime, Bollywood, Nepali films, drama, and live sports for free." />
+    <meta name="description" content="PKVIEW - Stream movies, TV shows, anime, Bollywood, Nepali films, and live sports for free." />
     <meta name="theme-color" content="#22254b" />
     <meta property="og:title" content="PKVIEW" />
     <meta property="og:description" content="Free streaming for movies, TV shows, anime, Bollywood, Nepali films, drama, and live sports." />
@@ -95,15 +95,6 @@
           <line x1="4" y1="22" x2="4" y2="15"></line>
         </svg>
         <span>Nepali</span>
-      </a>
-      <a href="#" class="nav-link" data-section="drama">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
-          <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-          <line x1="9" y1="9" x2="9.01" y2="9"></line>
-          <line x1="15" y1="9" x2="15.01" y2="9"></line>
-        </svg>
-        <span>Drama</span>
       </a>
       <a href="#" class="nav-link" data-section="sports">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -244,14 +235,15 @@
       <div id="liveSportsContainer" class="live-sports-container">
         <div class="live-sports-loading">Loading live matches...</div>
       </div>
-    </section>
-
-    <!-- Drama Section -->
-    <section id="dramaSection" class="drama-section">
-      <div class="section-header">
-        <h2 class="section-title">Hindi Drama</h2>
-      </div>
-      <div id="dramaContainer" class="drama-container">
+      <!-- Inline live player -->
+      <div id="livePlayerWrapper" class="live-player-wrapper" style="display:none;">
+        <div class="live-player-header">
+          <span id="livePlayerTitle" class="live-player-title"></span>
+          <button class="live-player-close" onclick="closeLivePlayer()">✕</button>
+        </div>
+        <div class="live-player-frame">
+          <iframe id="livePlayerFrame" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        </div>
       </div>
     </section>
 
