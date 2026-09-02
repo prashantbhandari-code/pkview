@@ -50,9 +50,13 @@ const BOLLYWOOD_url = buildDiscoverUrl('movie', { with_original_language: 'hi', 
 const ANIME_url = buildDiscoverUrl('tv', { with_genres: 16, with_original_language: 'ja', 'vote_count.gte': 50 });
 const SPORTS_TV_url = buildDiscoverUrl('tv', { with_genres: 10769, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const SPORTS_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 28, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
-const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 })
+const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 });
+const KOREAN_TV_url = buildDiscoverUrl('tv', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 50 });
+const KOREAN_MOVIE_url = buildDiscoverUrl('movie', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 100 });
+const WEB_SERIES_url = buildDiscoverUrl('tv', { with_genres: 18, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
+const DOCU_url = buildDiscoverUrl('tv', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
+const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 100 });
 
-// Drama data
 
 
 // Sports content with fallback
@@ -541,6 +545,15 @@ function switchSection(section) {
     } else if (section === 'anime') {
         currentSection = 'anime';
         LoadMovieOrTv('tv', ANIME_url);
+    } else if (section === 'korean') {
+        currentSection = 'korean';
+        LoadMovieOrTv('tv', KOREAN_TV_url);
+    } else if (section === 'webseries') {
+        currentSection = 'webseries';
+        LoadMovieOrTv('tv', WEB_SERIES_url);
+    } else if (section === 'docs') {
+        currentSection = 'docs';
+        LoadMovieOrTv('tv', DOCU_url);
     } else if (section === 'sports') {
         currentSection = 'sports';
         loadSportsContent();
@@ -814,6 +827,12 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
+        } else if (currentSection === 'korean') {
+            LoadMovieOrTv('tv', KOREAN_TV_url);
+        } else if (currentSection === 'webseries') {
+            LoadMovieOrTv('tv', WEB_SERIES_url);
+        } else if (currentSection === 'docs') {
+            LoadMovieOrTv('tv', DOCU_url);
         } else if (currentSection === 'sports') {
             loadSportsContent();
         } else if (whichPage == 'movie') {
@@ -826,12 +845,18 @@ function searchResultsAndDisplayWrapper(ev) {
             bollywood: 'movie',
             nepali: 'movie',
             anime: 'tv',
+            korean: 'tv',
+            webseries: 'tv',
+            docs: 'tv',
             sports: 'tv'
         };
         const langCodeMap = {
             bollywood: 'hi',
             nepali: 'ne',
             anime: 'ja',
+            korean: 'ko',
+            webseries: 'en',
+            docs: 'en',
             sports: 'hi'
         };
 
