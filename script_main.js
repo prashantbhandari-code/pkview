@@ -64,27 +64,35 @@ async function loadHindiKDramas() {
     try {
         // Search for popular Korean dramas with Hindi in title
         const res = await fetch(KOREAN_HINDI_TV_url);
+        if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
         
         if (data.results && data.results.length > 0) {
             // Filter to only Korean language content (Hindi dubbed K-dramas)
+            // TV search results use 'name', not 'title'
             const hindiKdramas = data.results.filter(item => 
                 item.original_language === 'ko' || 
-                (item.title && (item.title.includes('Hindi') || item.title.includes('hindi')))
+                (item.name && (item.name.includes('Hindi') || item.name.includes('hindi')))
             );
             
             if (hindiKdramas.length > 0) {
+                // Set pagination state so Prev/Next work
+                lastUrl = KOREAN_HINDI_TV_url;
+                currentPage = 1;
+                nextPage = 2;
+                prevPage = 1;
+                totalPages = 1;
+                if (window.currentBtn) window.currentBtn.innerText = '1';
+                if (window.prevBtn) window.prevBtn.classList.add('disabled');
+                if (window.nextBtn) window.nextBtn.classList.add('disabled');
                 showTvShows(hindiKdramas);
             } else {
-                // Fallback to popular K-dramas
                 LoadMovieOrTv('tv', KOREAN_TV_url);
             }
         } else {
-            // Fallback to popular K-dramas
             LoadMovieOrTv('tv', KOREAN_TV_url);
         }
     } catch (err) {
-        // Fallback on error
         LoadMovieOrTv('tv', KOREAN_TV_url);
     }
 }
@@ -376,9 +384,13 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     loadWatchHistory();
     loadFavorites();
 
-    const prev = document.getElementById("prev");
-    const current = document.getElementById("current");
-    const next = document.getElementById("next");
+    // Expose pagination elements globally so LoadMovieOrTv can access them
+    window.prevBtn = document.getElementById("prev");
+    window.currentBtn = document.getElementById("current");
+    window.nextBtn = document.getElementById("next");
+    const prev = window.prevBtn;
+    const current = window.currentBtn;
+    const next = window.nextBtn;
 
     prev.addEventListener('click', () => {
         if (prevPage > 0) {
@@ -690,17 +702,17 @@ async function LoadMovieOrTv(whichPage, url) {
             nextPage = currentPage + 1;
             prevPage = currentPage - 1;
             totalPages = data.total_pages;
-            current.innerText = currentPage;
+            if (window.currentBtn) window.currentBtn.innerText = currentPage;
 
             if (currentPage <= 1) {
-                prev.classList.add('disabled');
-                next.classList.remove('disabled');
+                if (window.prevBtn) window.prevBtn.classList.add('disabled');
+                if (window.nextBtn) window.nextBtn.classList.remove('disabled');
             } else if (currentPage >= totalPages) {
-                prev.classList.remove('disabled');
-                next.classList.add('disabled');
+                if (window.prevBtn) window.prevBtn.classList.remove('disabled');
+                if (window.nextBtn) window.nextBtn.classList.add('disabled');
             } else {
-                prev.classList.remove('disabled');
-                next.classList.remove('disabled');
+                if (window.prevBtn) window.prevBtn.classList.remove('disabled');
+                if (window.nextBtn) window.nextBtn.classList.remove('disabled');
             }
         } else {
             hideSpinner();
