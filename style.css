@@ -1601,54 +1601,378 @@ body.light-theme .episode-btn.watched {
   border-color: #28a745;
 }
 
-/* Responsive */
-@media screen and (max-width: 768px) {
-  .content-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 0.75rem;
+/* ===== MOBILE RESPONSIVE ===== */
+
+/* Tablet and small desktop */
+@media screen and (max-width: 900px) {
+  header {
+    flex-wrap: wrap;
+    gap: 10px;
   }
 
-  .episode-list {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  .search {
+    width: 100% !important;
+    order: 3;
+    margin: 0;
+    margin-top: 8px;
+  }
+
+  .flex-container {
+    flex: 1;
   }
 
   .header-controls {
-    gap: 8px;
+    flex-shrink: 0;
   }
 
-  .theme-toggle {
-    padding: 6px;
+  .movie, .tvshow {
+    width: calc(50% - 1.5rem);
+    min-width: 140px;
   }
 
+  .skeleton-card {
+    width: calc(50% - 1.5rem);
+    min-width: 140px;
+  }
+}
+
+/* Mobile */
+@media screen and (max-width: 768px) {
+  /* Header */
+  header {
+    padding: 0.6rem 1rem;
+  }
+
+  .animate-charcter {
+    font-size: 16px;
+  }
+
+  .search {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .switch {
+    width: 40px;
+    height: 40px;
+    padding: 0.4rem;
+  }
+
+  /* Nav */
   .main-nav {
-    gap: 6px;
-    padding: 10px 12px;
+    gap: 4px;
+    padding: 8px 10px;
   }
 
   .nav-link {
-    padding: 6px 14px;
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .nav-link svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* Cards */
+  .movie, .tvshow {
+    width: calc(50% - 1rem);
+    min-width: 130px;
+    margin: 0.5rem;
+  }
+
+  .movie-info {
+    padding: 0.4rem 0.6rem 0.6rem;
+  }
+
+  .movie-info h3 {
     font-size: 0.8rem;
   }
 
+  .movie-info span {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  .skeleton-card {
+    width: calc(50% - 1rem);
+    min-width: 130px;
+    margin: 0.5rem;
+  }
+
+  .skeleton-poster {
+    height: 200px;
+  }
+
+  /* Content grid */
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .episode-list {
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  }
+
+  /* Genre tags */
+  .scrollable-tabs-container {
+    margin: 10px 0;
+  }
+
+  #tags {
+    padding: 8px 16px;
+    gap: 10px;
+  }
+
+  .scrollable-tabs-container .tag {
+    padding: 3px 16px;
+    font-size: 0.8rem;
+  }
+
+  /* Pagination */
   .pagination {
-    margin: 16px auto;
+    margin: 12px auto;
     padding: 4px 8px;
+    gap: 2px;
   }
 
   .page {
-    padding: 6px 14px;
-    font-size: 0.85rem;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Section headers */
+  .section-header h2 {
+    font-size: 1.1rem;
+  }
+
+  /* Scroll to top */
+  #topBtn {
+    right: 0.8rem;
+    bottom: 0.8rem;
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Footer */
+  .footer {
+    padding: 20px 12px 12px;
+    margin-top: 24px;
+  }
+
+  .contact-text {
+    font-size: 0.65rem;
+  }
+
+  /* Header controls */
+  .header-controls {
+    gap: 6px;
+  }
+
+  .theme-toggle {
+    padding: 5px;
+  }
+
+  /* Content section */
+  .content-section {
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  /* Nepali banner */
+  .nepali-banner-content {
+    padding: 20px;
+  }
+
+  .nepali-banner-title {
+    font-size: 22px;
+  }
+
+  .nepali-banner-desc {
+    font-size: 12px;
+  }
+
+  .nepali-banner-btn {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+
+  /* Live match cards */
+  .live-match-card {
+    min-width: 130px;
+    padding: 10px;
+  }
+
+  .live-match-emoji {
+    font-size: 22px;
+  }
+
+  .live-match-tag {
+    font-size: 11px;
+  }
+
+  .live-match-league {
+    font-size: 10px;
+  }
+
+  /* Live player */
+  .live-player-wrapper {
+    margin-top: 12px;
+    border-radius: 8px;
+  }
+
+  .sports-server-tab {
+    padding: 8px 10px;
+    font-size: 0.7rem;
+    min-width: 70px;
+  }
+
+  /* Stream modal */
+  .stream-modal-content {
+    margin-top: 0;
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  .stream-header {
+    padding: 10px 12px;
+  }
+
+  .stream-header h3 {
+    font-size: 0.9rem;
+  }
+
+  .server-tab {
+    padding: 8px 10px;
+    font-size: 0.7rem;
+    min-width: 60px;
+  }
+
+  .lang-select {
+    padding: 5px 6px;
+    font-size: 0.75rem;
+  }
+
+  .season-select-container {
+    padding: 8px 12px;
+  }
+
+  .episode-btn {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Small phones */
+@media screen and (max-width: 480px) {
+  header {
+    padding: 0.5rem 0.8rem;
+  }
+
+  .animate-charcter {
+    font-size: 14px;
+  }
+
+  .nav-link span {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+  }
+
+  .nav-link svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .movie, .tvshow {
+    width: calc(50% - 0.8rem);
+    min-width: 110px;
+    margin: 0.4rem;
+  }
+
+  .movie-info {
+    padding: 0.3rem 0.5rem 0.5rem;
+  }
+
+  .movie-info h3 {
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .content-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .pagination {
+    padding: 3px 6px;
+  }
+
+  .page {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+  }
+
+  .scrollable-tabs-container .tag {
+    padding: 3px 12px;
+    font-size: 0.7rem;
+  }
+
+  .nepali-banner-title {
+    font-size: 18px;
+  }
+
+  .nepali-banner-content {
+    padding: 15px;
+  }
+
+  .empty-state, .error-state {
+    padding: 24px 16px;
+    font-size: 1rem;
   }
 
   #topBtn {
-    right: 1rem;
-    bottom: 1rem;
-    width: 38px;
-    height: 38px;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    width: 32px;
+    height: 32px;
   }
 
   .footer {
-    padding: 24px 16px 16px;
+    padding: 16px 10px 10px;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .movie:hover, .tvshow:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .movie:active, .tvshow:active {
+    transform: scale(0.97);
+  }
+
+  .watchnow:active, .trailer-btn:active {
+    transform: scale(0.95);
+  }
+
+  .nav-link:active {
+    transform: scale(0.95);
+  }
+
+  .live-match-card:active {
+    transform: scale(0.96);
+  }
+
+  .episode-btn:active {
+    transform: scale(0.95);
   }
 }
 

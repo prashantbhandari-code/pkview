@@ -88,7 +88,7 @@ async function loadLiveSports() {
         liveSportsData = data;
         renderLiveSports(container, data);
     } catch (e) {
-        container.innerHTML = '<div class="live-sports-empty">📺 No live matches right now — check back during major events!</div>';
+        container.innerHTML = '<div class="live-sports-empty fade-in">📺 No live matches right now<br><small>Check back during major sporting events!</small></div>';
     }
 }
 
@@ -107,7 +107,7 @@ function renderLiveSports(container, data) {
     });
 
     if (matches.length === 0) {
-        container.innerHTML = '<div class="live-sports-empty">📺 No live matches right now — check back during major events!</div>';
+        container.innerHTML = '<div class="live-sports-empty fade-in">📺 No live matches right now<br><small>Check back during major sporting events!</small></div>';
         return;
     }
 
@@ -671,7 +671,11 @@ async function LoadMovieOrTv(whichPage, url) {
             }
         } else {
             hideSpinner();
-            main.innerHTML = '<div class="empty-state fade-in">WOW! SUCH EMPTY 🙂</div>';
+            main.innerHTML = `<div class="empty-state fade-in">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">🎬</div>
+        <p style="margin: 0 0 8px;">No results found</p>
+        <small style="color: #888;">Try a different search term or browse another section</small>
+      </div>`;
         }
     } catch (error) {
         hideSpinner();
