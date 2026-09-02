@@ -40,9 +40,11 @@ body::-webkit-scrollbar-track {
 
 header {
   justify-content: space-between;
-  padding: 1rem;
+  padding: 0.8rem 1.2rem;
   display: flex;
+  align-items: center;
   background-color: var(--secondary-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .pageChange:hover {
@@ -204,18 +206,18 @@ main {
   width: 300px;
   margin: 1rem;
   background-color: var(--secondary-color);
-  box-shadow: 0 4px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   position: relative;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: 12px;
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s ease;
 }
 
 .movie:hover, .tvshow:hover {
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(255, 255, 255, 0.5), 0 0 32px rgba(0, 0, 0, 0.3);
-  transform: translateY(-20px);
+  box-shadow: 0 12px 28px rgba(255, 19, 97, 0.25), 0 4px 12px rgba(0, 0, 0, 0.4);
+  transform: translateY(-12px) scale(1.02);
   z-index: 2;
-  transition: all 0.4s ease-in-out;
 }
 
 .movie img, .tvshow img {
@@ -295,7 +297,7 @@ main {
 }
 
 .overview {
-  background-color: #fff;
+  background: linear-gradient(to top, rgba(22, 33, 62, 0.98) 60%, rgba(22, 33, 62, 0.85));
   padding: 2rem;
   position: absolute;
   left: 0;
@@ -304,7 +306,8 @@ main {
   max-height: 100%;
   transform: translateY(101%);
   overflow-y: auto;
-  transition: transform 0.7s ease-in;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 0 0 12px 12px;
 }
 
 .overview::-webkit-scrollbar {
@@ -334,20 +337,35 @@ main {
 .pagination {
   display: flex;
   justify-content: center;
-  margin: 10px 20px;
+  margin: 20px auto;
   align-items: center;
   color: white;
+  gap: 4px;
+  width: fit-content;
+  background: var(--secondary-color);
+  border-radius: 30px;
+  padding: 6px 12px;
 }
 
 .page {
-  padding: 10px;
+  padding: 8px 18px;
   cursor: pointer;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.9rem;
+  border-radius: 20px;
+  transition: background-color 0.2s, color 0.2s;
+  user-select: none;
 }
 
-.page:hover {
-  background-color: var(--secondary-color);
+.page:hover:not(.disabled) {
+  background-color: rgba(255, 19, 97, 0.2);
+  color: #ff1361;
+}
+
+#current {
+  background: linear-gradient(135deg, #ff1361, #ff6b35);
+  color: #fff;
+  font-weight: 600;
   border-radius: 20px;
 }
 
@@ -454,10 +472,17 @@ main {
 .main-nav {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  padding: 12px 20px;
+  gap: 8px;
+  padding: 12px 16px;
   background-color: var(--secondary-color);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.main-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-link {
@@ -470,8 +495,9 @@ main {
   border-radius: 25px;
   font-size: 0.9rem;
   font-weight: 400;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .nav-link:hover {
@@ -617,26 +643,27 @@ body {
 }
 
 .footer {
-  background-color: #333;
+  background-color: #1a1a2e;
   color: #fff;
   text-align: center;
-  padding: 15px 0 15px 0;
+  padding: 30px 20px 20px;
+  margin-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .contact-text {
-  margin: 0;
-  padding-top: 15px;
-  font-size: 10px 15px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  margin: 0;
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .copy {
   margin: 0;
   padding-top: 15px;
-  font-size: 10px 15px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .footer-content {
@@ -647,11 +674,14 @@ body {
 
 .icon {
   margin: 0;
-  padding: 10px;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
 .icon:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 svg {
@@ -663,14 +693,17 @@ svg {
 }
 
 .all {
-  margin-top: 10px;
+  margin-top: 8px;
   align-items: center;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
 }
 
 .social-top {
   margin: 0 auto;
   width: 90%;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
 }
 
@@ -691,19 +724,27 @@ svg {
 #topBtn {
   margin: 0;
   display: flex;
-  justify-items: center;
   align-items: center;
-  background: none;
-  border: none;
-  border-radius: 100%;
-  background-color: rgba(255, 255, 255, 0.5);
-  padding: 5px;
+  justify-content: center;
+  background: var(--secondary-color);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   cursor: pointer;
   position: fixed;
-  right: 2.5rem;
-  bottom: 2rem;
-  transition: all;
-  transition-duration: 300ms;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+  z-index: 100;
+}
+
+#topBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(255, 19, 97, 0.3);
+  background-color: rgba(255, 19, 97, 0.15);
 }
 
 .top-icon {
@@ -1093,8 +1134,17 @@ body.light-theme .theme-toggle .moon-icon {
 
 .content-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 1rem;
+}
+
+.content-grid .movie {
+  width: 100%;
+  margin: 0;
+}
+
+.content-grid .movie img {
+  border-radius: 12px 12px 0 0;
 }
 
 /* Season Modal */
@@ -1247,6 +1297,130 @@ body.light-theme .theme-toggle .moon-icon {
   width: 50px;
 }
 
+/* ===== Loading Spinner ===== */
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.spinner-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.spinner {
+  width: 44px;
+  height: 44px;
+  border: 4px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #ff1361;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Fade-in Animations ===== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.45s ease-out both;
+}
+
+.fade-in {
+  animation: fadeIn 0.35s ease-out both;
+}
+
+.scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+/* Staggered card entrance */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+/* ===== Section transitions ===== */
+.section-transition {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== Button press effect ===== */
+.watchnow:active,
+.drama-card-watch:active,
+.trailer-btn:active,
+.knowmore:active,
+.nepali-banner-btn:active {
+  transform: scale(0.95);
+  transition: transform 0.1s;
+}
+
+/* ===== Nav link ripple ===== */
+.nav-link:active {
+  transform: scale(0.95);
+}
+
+/* ===== Favorite heart pulse ===== */
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.3); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.favorite-btn.pulse svg {
+  animation: heartPulse 0.4s ease;
+}
+
+/* ===== Stream modal entrance ===== */
+.stream-modal.active .stream-modal-content {
+  animation: scaleIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
 body.light-theme {
   --primary-color: #f0f0f5;
   --secondary-color: #ffffff;
@@ -1283,7 +1457,7 @@ body.light-theme .movie-info .favorite-btn:hover {
 }
 
 body.light-theme .overview {
-  background-color: #f5f5f5;
+  background: linear-gradient(to top, rgba(245, 245, 245, 0.98) 60%, rgba(245, 245, 245, 0.85));
   color: #333;
 }
 
@@ -1338,11 +1512,34 @@ body.light-theme .icon svg {
 }
 
 body.light-theme .top-icon {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.12);
 }
 
 body.light-theme .top-icon svg {
   color: #373b69;
+}
+
+body.light-theme .pagination {
+  background: #e8e8ed;
+}
+
+body.light-theme .page {
+  color: #333;
+}
+
+body.light-theme .page:hover:not(.disabled) {
+  background-color: rgba(255, 19, 97, 0.15);
+  color: #ff1361;
+}
+
+body.light-theme #current {
+  background: linear-gradient(135deg, #ff1361, #ff6b35);
+  color: #fff;
+}
+
+body.light-theme .disabled {
+  color: #bbb;
 }
 
 body.light-theme .stream-player,
@@ -1421,19 +1618,51 @@ body.light-theme .episode-btn.watched {
 /* Responsive */
 @media screen and (max-width: 768px) {
   .content-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
   }
-  
+
   .episode-list {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
-  
+
   .header-controls {
-    gap: 10px;
+    gap: 8px;
   }
-  
+
   .theme-toggle {
     padding: 6px;
+  }
+
+  .main-nav {
+    gap: 6px;
+    padding: 10px 12px;
+  }
+
+  .nav-link {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+
+  .pagination {
+    margin: 16px auto;
+    padding: 4px 8px;
+  }
+
+  .page {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+  }
+
+  #topBtn {
+    right: 1rem;
+    bottom: 1rem;
+    width: 38px;
+    height: 38px;
+  }
+
+  .footer {
+    padding: 24px 16px 16px;
   }
 }
 

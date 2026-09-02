@@ -11,6 +11,23 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// --- Loading spinner ---
+let spinnerTimeout = null;
+function showSpinner(delayMs = 300) {
+    clearTimeout(spinnerTimeout);
+    spinnerTimeout = setTimeout(() => {
+        const el = document.getElementById('loadingSpinner');
+        if (el) el.classList.add('active');
+    }, delayMs);
+}
+
+function hideSpinner() {
+    clearTimeout(spinnerTimeout);
+    spinnerTimeout = null;
+    const el = document.getElementById('loadingSpinner');
+    if (el) el.classList.remove('active');
+}
+
 // --- Build proxied TMDB URLs ---
 function tmdbUrl(endpoint, params = {}) {
     const qs = new URLSearchParams(params).toString();
@@ -59,9 +76,10 @@ function loadDramaSection() {
     if (!container) return;
     container.innerHTML = '';
 
-    DRAMA_DATA.forEach(drama => {
+    DRAMA_DATA.forEach((drama, index) => {
         const card = document.createElement('div');
-        card.classList.add('drama-card');
+        card.classList.add('drama-card', 'scale-in');
+        if (index < 4) card.classList.add('stagger-' + (index + 1));
         card.innerHTML = `
             <img class="drama-card-img" src="${drama.poster}" alt="${drama.title}" onerror="this.src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'">
             <div class="drama-card-body">
@@ -469,6 +487,12 @@ function switchSection(section) {
     selectedGenre = [];
     currentPage = 1;
 
+    // Section transition animation
+    const main = document.querySelector('#main');
+    main.classList.remove('section-transition');
+    void main.offsetWidth;
+    main.classList.add('section-transition');
+
     // Update active nav link
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
@@ -606,6 +630,7 @@ function showSkeletons() {
 async function LoadMovieOrTv(whichPage, url) {
     lastUrl = url;
     let main = document.querySelector('#main');
+    showSpinner();
 
     try {
         let res = await fetch(url);
@@ -635,9 +660,11 @@ async function LoadMovieOrTv(whichPage, url) {
                 next.classList.remove('disabled');
             }
         } else {
-            main.innerHTML = '<div class="empty-state">WOW! SUCH EMPTY 🙂</div>';
+            hideSpinner();
+            main.innerHTML = '<div class="empty-state fade-in">WOW! SUCH EMPTY 🙂</div>';
         }
     } catch (error) {
+        hideSpinner();
         console.error('Error loading data:', error);
         main.innerHTML = `
         <div class="error-state">
@@ -652,11 +679,13 @@ async function LoadMovieOrTv(whichPage, url) {
 function showMovies(data) {
     let main = document.querySelector('#main');
     main.innerHTML = '';
+    hideSpinner();
 
-    data.forEach(movie => {
+    data.forEach((movie, index) => {
         const { title, poster_path, vote_average, overview, release_date, id } = movie;
         const movieEl = document.createElement('div');
-        movieEl.classList.add('movie');
+        movieEl.classList.add('movie', 'fade-in-up');
+        if (index < 8) movieEl.classList.add('stagger-' + (index + 1));
         movieEl.dataset.item = JSON.stringify({...movie, media_type: 'movie'});
 
         const safeTitle = escapeHtml(title);
@@ -696,11 +725,13 @@ function showMovies(data) {
 function showTvShows(data) {
     let main = document.querySelector('#main');
     main.innerHTML = '';
+    hideSpinner();
 
-    data.forEach(tvshow => {
+    data.forEach((tvshow, index) => {
         const { name, overview, poster_path, vote_average, first_air_date, id } = tvshow;
         const tvEl = document.createElement('div');
-        tvEl.classList.add('tvshow');
+        tvEl.classList.add('tvshow', 'fade-in-up');
+        if (index < 8) tvEl.classList.add('stagger-' + (index + 1));
         tvEl.dataset.item = JSON.stringify({...tvshow, media_type: 'tv'});
 
         const safeName = escapeHtml(name);
@@ -756,6 +787,10 @@ function setupFavoriteButtons() {
             const id = parseInt(btn.dataset.id);
             const type = btn.dataset.type;
             toggleFavorite(id, type);
+            // Heart pulse animation
+            btn.classList.remove('pulse');
+            void btn.offsetWidth; // trigger reflow
+            btn.classList.add('pulse');
         });
     });
     updateFavoriteButtons();
@@ -849,7 +884,7 @@ async function loadNepaliFeatured() {
         const movieJson = JSON.stringify(movie).replace(/"/g, '&quot;');
 
         container.innerHTML = `
-            <div class="nepali-banner">
+            <div class="nepali-banner fade-in">
                 <img src="${backdropUrl}" alt="${safeTitle}" class="nepali-banner-img">
                 <div class="nepali-banner-content">
                     <span class="nepali-banner-tag">Featured Nepali Film</span>
@@ -916,9 +951,10 @@ function loadWatchHistory() {
     section.style.display = 'block';
     grid.innerHTML = '';
 
-    watchHistory.slice(0, 6).forEach(item => {
+    watchHistory.slice(0, 6).forEach((item, index) => {
         const div = document.createElement('div');
-        div.classList.add('movie');
+        div.classList.add('movie', 'fade-in-up');
+        if (index < 6) div.classList.add('stagger-' + (index + 1));
         div.dataset.item = JSON.stringify({...item, media_type: item.type});
         const safeTitle = escapeHtml(item.title || '');
         const posterSrc = item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
@@ -982,9 +1018,9 @@ function loadFavorites() {
 
         fetch(url)
             .then(res => res.json())
-            .then(data => {
+            .then((data, idx) => {
                 const div = document.createElement('div');
-                div.classList.add('movie');
+                div.classList.add('movie', 'fade-in-up');
                 div.dataset.item = JSON.stringify({...data, media_type: item.type});
                 const displayName = escapeHtml(data.title || data.name || '');
                 const posterSrc = data.poster_path ? IMG_url + data.poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
