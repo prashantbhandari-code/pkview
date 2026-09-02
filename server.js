@@ -19,8 +19,14 @@ app.use((req, res, next) => {
 app.use(express.static(path.join(__dirname)));
 
 // --- TMDB API Proxy (hides API key from client) ---
+const TMDB_ALLOWED_PATHS = /^(discover|search|tv|movie)\//;
 app.get('/api/tmdb/*', (req, res) => {
   const tmdbPath = req.params[0];
+
+  if (!TMDB_ALLOWED_PATHS.test(tmdbPath)) {
+    return res.status(403).json({ error: 'Disallowed endpoint' });
+  }
+
   const qs = new URLSearchParams(req.query).toString();
   const url = `https://api.themoviedb.org/3/${tmdbPath}?api_key=${TMDB_API_KEY}${qs ? '&' + qs : ''}`;
 

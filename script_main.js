@@ -337,6 +337,12 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     let searchBar = document.querySelector('.search');
     searchBar.addEventListener('input', searchStart);
 
+    // Prevent form submit from reloading the page
+    const searchForm = document.getElementById('form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', (e) => e.preventDefault());
+    }
+
     let copyRightYear = document.getElementById("copyright-year");
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
@@ -578,10 +584,11 @@ function LoadDataAndDisplay() {
 
 // Show skeleton loaders while content loads
 function showSkeletons() {
-    let main = document.querySelector('#main');
+    const main = document.querySelector('#main');
     main.innerHTML = '';
-    for (let i = 0; i < 6; i++) {
-        main.innerHTML += `
+    const frag = document.createDocumentFragment();
+    const tpl = document.createElement('template');
+    tpl.innerHTML = `
         <div class="skeleton-card">
             <div class="skeleton skeleton-poster"></div>
             <div class="skeleton-info">
@@ -589,8 +596,11 @@ function showSkeletons() {
                 <div class="skeleton skeleton-rating"></div>
             </div>
         </div>
-        `;
+    `;
+    for (let i = 0; i < 6; i++) {
+        frag.appendChild(tpl.content.cloneNode(true));
     }
+    main.appendChild(frag);
 }
 
 async function LoadMovieOrTv(whichPage, url) {
@@ -1046,6 +1056,10 @@ async function loadSeasonEpisode(tvId) {
         }
     } catch (error) {
         console.error('Error loading seasons:', error);
+        const seasonSelect = document.getElementById('seasonSelect');
+        if (seasonSelect) {
+            seasonSelect.innerHTML = '<option value="">Failed to load seasons</option>';
+        }
     }
 }
 
@@ -1070,6 +1084,10 @@ async function loadEpisodes(tvId, seasonNum) {
         loadServer(currentServerIndex);
     } catch (error) {
         console.error('Error loading episodes:', error);
+        const episodeSelect = document.getElementById('episodeSelect');
+        if (episodeSelect) {
+            episodeSelect.innerHTML = '<option value="">Failed to load episodes</option>';
+        }
     }
 }
 
