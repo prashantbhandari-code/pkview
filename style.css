@@ -1691,6 +1691,63 @@ body.light-theme .episode-btn.watched {
   background-color: rgba(255, 19, 97, 0.15);
 }
 
+/* Sports server tabs */
+.live-sports-server-tabs {
+  display: flex;
+  gap: 0;
+  background: #16213e;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.live-sports-server-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sports-server-tab {
+  flex: 1;
+  min-width: 90px;
+  padding: 10px 14px;
+  background: transparent;
+  color: #aaa;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  white-space: nowrap;
+}
+
+.sports-server-tab:hover {
+  color: #fff;
+  background: rgba(115, 120, 197, 0.15);
+}
+
+.sports-server-tab.active {
+  color: #fff;
+  border-bottom-color: #ff1361;
+  background: rgba(255, 19, 97, 0.1);
+}
+
+body.light-theme .live-sports-server-tabs {
+  background: #e8e8ed;
+}
+
+body.light-theme .sports-server-tab {
+  color: #666;
+}
+
+body.light-theme .sports-server-tab:hover {
+  color: #333;
+}
+
+body.light-theme .sports-server-tab.active {
+  color: #ff1361;
+  border-bottom-color: #ff1361;
+}
+
 .live-player-frame {
   position: relative;
   width: 100%;

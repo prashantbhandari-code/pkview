@@ -123,20 +123,75 @@ function renderLiveSports(container, data) {
     window._liveMatches = matches;
 }
 
+// Free sports streaming servers
+const SPORTS_SERVERS = [
+    {
+        name: 'EmbedSportex',
+        // Uses the live match iframe URL from the API
+        getUrl: (match) => match.iframes && match.iframes[0] ? match.iframes[0].url : ''
+    },
+    {
+        name: 'Sportsurge',
+        getUrl: (match) => {
+            const q = encodeURIComponent(match.tag || match.league || 'live sports');
+            return `https://sportsurge.net/box-ng/embed/${q}`;
+        }
+    },
+    {
+        name: 'Footstar',
+        getUrl: (match) => {
+            const q = encodeURIComponent(match.tag || match.league || 'live');
+            return `https://footstar.org/embed/${q}`;
+        }
+    },
+    {
+        name: 'TopEmbed',
+        getUrl: (match) => {
+            const q = encodeURIComponent(match.tag || match.league || 'live');
+            return `https://topembed.pw/video/${q}`;
+        }
+    }
+];
+
+let currentSportsServerIndex = 0;
+let currentLiveMatch = null;
+
 function openLiveMatch(index) {
     const match = window._liveMatches && window._liveMatches[index];
-    if (!match || !match.iframes || match.iframes.length === 0) return;
+    if (!match) return;
 
-    const streamUrl = match.iframes[0].url;
+    currentLiveMatch = match;
+    currentSportsServerIndex = 0;
     const wrapper = document.getElementById('livePlayerWrapper');
-    const frame = document.getElementById('livePlayerFrame');
     const title = document.getElementById('livePlayerTitle');
 
     title.textContent = match.tag || match.league || 'Live Match';
-    frame.src = streamUrl;
     wrapper.style.display = 'block';
     wrapper.classList.add('fade-in');
     wrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Reset active server tab
+    document.querySelectorAll('.sports-server-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === 0);
+    });
+
+    loadSportsServer(0);
+}
+
+function loadSportsServer(index) {
+    if (!currentLiveMatch) return;
+    currentSportsServerIndex = index;
+    const frame = document.getElementById('livePlayerFrame');
+    const url = SPORTS_SERVERS[index].getUrl(currentLiveMatch);
+    if (url) frame.src = url;
+
+    document.querySelectorAll('.sports-server-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+    });
+}
+
+function switchSportsServer(index) {
+    loadSportsServer(index);
 }
 
 function closeLivePlayer() {
@@ -144,6 +199,7 @@ function closeLivePlayer() {
     const frame = document.getElementById('livePlayerFrame');
     frame.src = '';
     wrapper.style.display = 'none';
+    currentLiveMatch = null;
 }
 
 const genres = [
