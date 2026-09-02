@@ -13,6 +13,69 @@ const SPORTS_API = 'https://api.embedsportex.fun/api';
 const NEPALI_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=ne&sort_by=popularity.desc&vote_count.gte=0';
 const NEPALI_FEATURED_ID = 1423966; // Missing: Keti Harayeko Suchana
 
+// Drama data
+const DRAMA_DATA = [
+    {
+        id: 'mandap-main-masti',
+        title: 'Mandap Main Masti',
+        genre: 'Drama · Comedy · Romance',
+        description: 'A fun-filled Hindi drama set in the lively atmosphere of a wedding mandap. With twists, turns, and lots of masti, this show keeps you entertained episode after episode.',
+        poster: 'https://img.youtube.com/vi/bRbJYKuDPYE/maxresdefault.jpg',
+        type: 'tv'
+    },
+    {
+        id: 'boss-bangayi-baby',
+        title: 'Boss Bangayi Baby',
+        genre: 'Drama · Comedy · Family',
+        description: 'When the boss becomes a baby, chaos and laughter follow! A unique Hindi drama blending comedy and family emotions in the most unexpected way.',
+        poster: 'https://img.youtube.com/vi/qPGmIa-WQhA/maxresdefault.jpg',
+        type: 'tv'
+    }
+];
+
+function loadDramaSection() {
+    const container = document.getElementById('dramaContainer');
+    if (!container) return;
+    container.innerHTML = '';
+
+    DRAMA_DATA.forEach(drama => {
+        const card = document.createElement('div');
+        card.classList.add('drama-card');
+        card.innerHTML = `
+            <img class="drama-card-img" src="${drama.poster}" alt="${drama.title}" onerror="this.src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'">
+            <div class="drama-card-body">
+                <span class="drama-card-genre">${drama.genre}</span>
+                <h3 class="drama-card-title">${drama.title}</h3>
+                <p class="drama-card-desc">${drama.description}</p>
+                <button class="drama-card-watch" onclick="openDramaStream('${drama.id}')">▶ Watch Now</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function openDramaStream(dramaId) {
+    const drama = DRAMA_DATA.find(d => d.id === dramaId);
+    if (!drama) return;
+
+    // Search TMDB for the drama
+    fetch(SEARCH_url + drama.title)
+        .then(res => res.json())
+        .then(data => {
+            if (data.results && data.results.length > 0) {
+                const item = data.results[0];
+                item.media_type = 'tv';
+                openStream(item);
+            } else {
+                // Fallback: open search in a new tab
+                window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(drama.title + ' Hindi drama full episode'), '_blank');
+            }
+        })
+        .catch(() => {
+            window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(drama.title + ' Hindi drama full episode'), '_blank');
+        });
+}
+
 // Live sports data and stream player
 let liveSportsData = null;
 
@@ -352,6 +415,12 @@ function switchSection(section) {
         sportsChannels.style.display = section === 'sports' ? 'block' : 'none';
     }
 
+    // Show/hide drama section
+    const dramaSection = document.getElementById('dramaSection');
+    if (dramaSection) {
+        dramaSection.style.display = section === 'drama' ? 'block' : 'none';
+    }
+
     // Show/hide nepali featured
     const nepaliFeatured = document.getElementById('nepaliFeaturedSection');
     if (nepaliFeatured) {
@@ -372,6 +441,9 @@ function switchSection(section) {
     } else if (section === 'anime') {
         currentSection = 'anime';
         LoadMovieOrTv('tv', ANIME_url);
+    } else if (section === 'drama') {
+        currentSection = 'drama';
+        loadDramaSection();
     } else if (section === 'sports') {
         currentSection = 'sports';
         LoadMovieOrTv('tv', SPORTS_url);
@@ -631,6 +703,8 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
+        } else if (currentSection === 'drama') {
+            loadDramaSection();
         } else if (currentSection === 'sports') {
             LoadMovieOrTv('tv', SPORTS_url);
         } else if (whichPage == 'movie') {
@@ -648,6 +722,9 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('movie', url_search);
         } else if (currentSection === 'anime') {
             let url_search = TV_Search_url + searchQuery + '&with_original_language=ja';
+            LoadMovieOrTv('tv', url_search);
+        } else if (currentSection === 'drama') {
+            let url_search = TV_Search_url + searchQuery + '&with_original_language=hi';
             LoadMovieOrTv('tv', url_search);
         } else if (currentSection === 'sports') {
             let url_search = TV_Search_url + searchQuery + '&with_original_language=hi';
