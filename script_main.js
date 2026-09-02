@@ -742,7 +742,7 @@ function showMovies(data) {
         movieEl.innerHTML = `
         <div>
         <span class="releaseDate">${escapeHtml(release_date)}</span>
-        <img src="${posterSrc}" alt="${safeTitle}">
+        <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
         </div>
         <div class="movie-info">
         <h3>${safeTitle}</h3>
@@ -788,7 +788,7 @@ function showTvShows(data) {
         tvEl.innerHTML = `
       <div>
       <span class="releaseDate">${escapeHtml(first_air_date)}</span>
-      <img src="${posterSrc}" alt="${safeName}">
+      <img src="${posterSrc}" alt="${safeName}" loading="lazy">
       </div>
       <div class="movie-info">
       <h3>${safeName}</h3>
@@ -1014,7 +1014,7 @@ function loadWatchHistory() {
         const safeTitle = escapeHtml(item.title || '');
         const posterSrc = item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
         div.innerHTML = `
-            <img src="${posterSrc}" alt="${safeTitle}">
+            <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
             <div class="movie-info"><h3>${safeTitle}</h3></div>
         `;
         div.addEventListener('click', () => {
