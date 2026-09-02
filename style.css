@@ -1570,3 +1570,237 @@ body.light-theme .drama-card-desc {
     min-height: 100vh !important;
   }
 }
+
+/* Section visibility classes (hidden by default, toggled by JS) */
+.drama-section,
+.sports-channels-section,
+.nepali-featured-section {
+    display: none;
+}
+
+/* Sports channels section */
+.sports-channels-section {
+    padding: 10px 20px;
+}
+
+/* Live sports container */
+.live-sports-container {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    min-height: 80px;
+}
+
+.live-sports-empty {
+    color: #888;
+    padding: 20px;
+}
+
+/* Live match card base styles */
+.live-match-card {
+    min-width: 180px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid #e94560;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.live-match-emoji {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.live-match-tag {
+    font-weight: 600;
+    font-size: 12px;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.live-match-league {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.live-match-status {
+    font-size: 11px;
+    color: #e94560;
+    margin-top: 4px;
+}
+
+/* Drama section */
+.drama-section {
+    padding: 20px;
+}
+
+.drama-container {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    min-height: 80px;
+}
+
+/* Nepali featured section */
+.nepali-featured-section {
+    display: none;
+}
+
+.nepali-featured-banner {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    border-radius: 16px;
+    margin: 0 20px 20px;
+    overflow: hidden;
+    position: relative;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+}
+
+.nepali-banner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 300px;
+    position: relative;
+}
+
+.nepali-banner-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.4;
+}
+
+.nepali-banner-content {
+    position: relative;
+    z-index: 2;
+    padding: 40px;
+    max-width: 600px;
+}
+
+.nepali-banner-tag {
+    background: #e94560;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.nepali-banner-title {
+    color: white;
+    font-size: 32px;
+    margin: 16px 0 8px;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+}
+
+.nepali-banner-meta {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.nepali-banner-desc {
+    color: #ddd;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    max-width: 500px;
+}
+
+.nepali-banner-btn {
+    background: #e94560;
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.nepali-banner-btn:hover {
+    background: #d63050;
+}
+
+.nepali-banner-empty {
+    color: #888;
+    padding: 40px;
+}
+
+/* Light theme overrides for nepali */
+body.light-theme .nepali-banner-tag {
+    background: #c0392b;
+}
+
+body.light-theme .nepali-banner-btn {
+    background: #c0392b;
+}
+
+body.light-theme .nepali-banner-btn:hover {
+    background: #a93226;
+}
+
+/* Section title */
+.section-title {
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+/* Loading placeholder */
+.live-sports-loading {
+    color: #888;
+    padding: 20px;
+}
+
+/* Light theme overrides */
+body.light-theme .section-title {
+    color: #222;
+}
+
+body.light-theme .live-sports-empty,
+body.light-theme .live-sports-loading {
+    color: #666;
+}
+
+body.light-theme .live-match-card {
+    background: #f8f9fa;
+    border-color: #ddd;
+}
+
+body.light-theme .live-match-tag {
+    color: #333;
+}
+
+body.light-theme .live-match-league {
+    color: #666;
+}
+
+/* Empty & error states */
+.empty-state {
+    color: white;
+    text-align: center;
+    padding: 40px;
+    font-size: 1.2rem;
+}
+
+.error-state {
+    text-align: center;
+    padding: 40px;
+    color: #fff;
+}
+
+body.light-theme .empty-state,
+body.light-theme .error-state {
+    color: #333;
+}

@@ -1,17 +1,38 @@
-const API_key = 'api_key=4b153b123319df27bb67fcbfe219537d';
-const BASE_url = 'https://api.themoviedb.org/3';
-const API_url = BASE_url + '/discover/movie?sort_by=popularity.desc&' + API_key;
+const PROXY_BASE = '/api/tmdb';
 const IMG_url = 'https://image.tmdb.org/t/p/w500';
-const SEARCH_url = 'https://api.themoviedb.org/3/search/movie?api_key=4b153b123319df27bb67fcbfe219537d&query=';
-const TV_url = BASE_url + '/tv/popular?' + API_key + '&vote_count.gte=100';
-const TV_Search_url = 'https://api.themoviedb.org/3/search/tv?' + API_key + '&query=';
-const BOLLYWOOD_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=hi&sort_by=primary_release_date.desc&vote_count.gte=50';
-const ANIME_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
-const ANIME_MOVIE_url = BASE_url + '/discover/movie?' + API_key + '&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50';
-const SPORTS_url = BASE_url + '/discover/tv?' + API_key + '&with_genres=10769&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=10';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
-const NEPALI_url = BASE_url + '/discover/movie?' + API_key + '&with_original_language=ne&sort_by=popularity.desc&vote_count.gte=0';
-const NEPALI_FEATURED_ID = 1423966; // Missing: Keti Harayeko Suchana
+const NEPALI_FEATURED_ID = 1423966;
+
+// --- XSS sanitization ---
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+}
+
+// --- Build proxied TMDB URLs ---
+function tmdbUrl(endpoint, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return `${PROXY_BASE}/${endpoint}${qs ? '?' + qs : ''}`;
+}
+
+function buildDiscoverUrl(mediaType, extraParams) {
+    const base = mediaType === 'movie' ? 'discover/movie' : 'discover/tv';
+    return tmdbUrl(base, { sort_by: 'popularity.desc', ...extraParams });
+}
+
+function buildSearchUrl(mediaType, query, extraParams) {
+    const base = mediaType === 'movie' ? 'search/movie' : 'search/tv';
+    return tmdbUrl(base, { query, ...extraParams });
+}
+
+const API_url = buildDiscoverUrl('movie', {});
+const TV_url = tmdbUrl('tv/popular', { 'vote_count.gte': 100 });
+const BOLLYWOOD_url = buildDiscoverUrl('movie', { with_original_language: 'hi', sort_by: 'primary_release_date.desc', 'vote_count.gte': 50 });
+const ANIME_url = buildDiscoverUrl('tv', { with_genres: 16, with_original_language: 'ja', 'vote_count.gte': 50 });
+const SPORTS_url = buildDiscoverUrl('tv', { with_genres: 10769, with_original_language: 'hi', sort_by: 'popularity.desc', 'vote_count.gte': 10 });
+const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 })
 
 // Drama data
 const DRAMA_DATA = [
@@ -59,7 +80,7 @@ function openDramaStream(dramaId) {
     if (!drama) return;
 
     // Search TMDB for the drama
-    fetch(SEARCH_url + drama.title)
+    fetch(buildSearchUrl('tv', drama.title))
         .then(res => res.json())
         .then(data => {
             if (data.results && data.results.length > 0) {
@@ -92,7 +113,7 @@ async function loadLiveSports() {
         liveSportsData = data;
         renderLiveSports(container, data);
     } catch (e) {
-        container.innerHTML = '<div style="color: #888; padding: 20px;">No live matches right now</div>';
+        container.innerHTML = '<div class="live-sports-empty">No live matches right now</div>';
     }
 }
 
@@ -111,18 +132,20 @@ function renderLiveSports(container, data) {
     });
 
     if (matches.length === 0) {
-        container.innerHTML = '<div style="color: #888; padding: 20px;">No live matches right now. Check back later!</div>';
+        container.innerHTML = '<div class="live-sports-empty">No live matches right now. Check back later!</div>';
         return;
     }
 
     container.innerHTML = matches.map((match, i) => {
         const sportEmoji = { cricket: '🏏', football: '⚽', basketball: '🏀', tennis: '🎾', hockey: '🏒' }[match.sport] || '🏆';
+        const safeTag = escapeHtml(match.tag || match.league || 'Live Match');
+        const safeLeague = escapeHtml(match.league || '');
         return `
-        <div class="live-match-card" onclick="openLiveMatch(${i})" style="min-width:180px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 1px solid #e94560; border-radius: 12px; padding: 14px; cursor: pointer; flex-shrink: 0; transition: transform 0.2s;">
-            <div style="font-size: 28px; margin-bottom: 6px;">${sportEmoji}</div>
-            <div style="font-weight: 600; font-size: 12px; color: #fff; margin-bottom: 4px;">${match.tag || match.league || 'Live Match'}</div>
-            <div style="font-size: 11px; color: #aaa;">${match.league || ''}</div>
-            <div style="font-size: 11px; color: #e94560; margin-top: 4px;">LIVE NOW</div>
+        <div class="live-match-card" onclick="openLiveMatch(${i})">
+            <div class="live-match-emoji">${sportEmoji}</div>
+            <div class="live-match-tag">${safeTag}</div>
+            <div class="live-match-league">${safeLeague}</div>
+            <div class="live-match-status">LIVE NOW</div>
         </div>`;
     }).join('');
 
@@ -221,11 +244,11 @@ let watchHistory = JSON.parse(localStorage.getItem('pkview_history') || '[]');
 let favorites = JSON.parse(localStorage.getItem('pkview_favorites') || '[]');
 let selectedGenre = [];
 let currentSection = 'home'; // home, bollywood, anime, sports
-var currentPage = 1;
-var nextPage = 2;
-var prevPage = 3;
-var lastUrl = '';
-var totalPages = 100;
+let currentPage = 1;
+let nextPage = 2;
+let prevPage = 3;
+let lastUrl = '';
+let totalPages = 100;
 
 window.addEventListener("DOMContentLoaded", (ev) => {
     let main = document.querySelector('#main');
@@ -336,6 +359,50 @@ window.addEventListener("DOMContentLoaded", (ev) => {
             closeSeasonModal();
         }
     });
+
+    // Server tab clicks
+    document.querySelectorAll('.server-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const serverIndex = parseInt(tab.dataset.server);
+            loadServer(serverIndex);
+        });
+    });
+
+    // Language selector
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect) {
+        langSelect.addEventListener('change', (e) => {
+            const lang = e.target.value;
+            const frame = document.getElementById('streamFrame');
+            if (frame.src) {
+                frame.src = frame.src.split('&lang=')[0] + '&lang=' + lang;
+            }
+        });
+    }
+
+    // Season/Episode selectors
+    const seasonSelect = document.getElementById('seasonSelect');
+    const episodeSelect = document.getElementById('episodeSelect');
+    if (seasonSelect) {
+        seasonSelect.addEventListener('change', async (e) => {
+            if (currentStreamItem) {
+                const seasonNum = parseInt(e.target.value);
+                await loadEpisodes(currentStreamItem.id, seasonNum);
+            }
+        });
+    }
+    if (episodeSelect) {
+        episodeSelect.addEventListener('change', (e) => {
+            currentEpisode = parseInt(e.target.value);
+            loadServer(currentServerIndex);
+        });
+    }
+
+    // Clear favorites button
+    const clearBtn = document.getElementById('clearFavorites');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearFavorites);
+    }
 });
 
 function topFunction() {
@@ -487,21 +554,13 @@ function highlightSelection() {
 }
 
 function pageCall(page) {
-    let urlSplit = lastUrl.split('?');
-    let queryParameter = urlSplit[1].split('&');
-    let key = queryParameter[queryParameter.length - 1].split('=');
-    if (key[0] != 'page') {
-        let url = lastUrl + '&page=' + page;
-        let whichPage = localStorage.getItem('page');
-        LoadMovieOrTv(whichPage, url);
-    } else {
-        key[1] = page.toString();
-        let a = key.join('=');
-        queryParameter[queryParameter.length - 1] = a;
-        let b = queryParameter.join('&');
-        let url = urlSplit[0] + '?' + b;
-        let whichPage = localStorage.getItem('page');
-        LoadMovieOrTv(whichPage, url);
+    try {
+        const url = new URL(lastUrl, window.location.origin);
+        url.searchParams.set('page', page);
+        const whichPage = localStorage.getItem('page');
+        LoadMovieOrTv(whichPage, url.pathname + url.search);
+    } catch (e) {
+        console.error('pageCall URL parse error:', e);
     }
 }
 
@@ -566,16 +625,14 @@ async function LoadMovieOrTv(whichPage, url) {
                 next.classList.remove('disabled');
             }
         } else {
-            main.innerHTML = `
-            <h1 style="color: white; text-align: center; padding: 40px;"> WOW! SUCH EMPTY 🙂 </h1>
-            `;
+            main.innerHTML = '<div class="empty-state">WOW! SUCH EMPTY 🙂</div>';
         }
     } catch (error) {
         console.error('Error loading data:', error);
         main.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: #fff;">
+        <div class="error-state">
             <h2>⚠️ Failed to load content</h2>
-            <p>${error.message}</p>
+            <p>${escapeHtml(error.message || 'Unknown error')}</p>
             <button onclick="LoadDataAndDisplay()" class="knowmore">Retry</button>
         </div>
         `;
@@ -592,13 +649,17 @@ function showMovies(data) {
         movieEl.classList.add('movie');
         movieEl.dataset.item = JSON.stringify({...movie, media_type: 'movie'});
 
+        const safeTitle = escapeHtml(title);
+        const safeOverview = escapeHtml(overview);
+        const posterSrc = poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
+
         movieEl.innerHTML = `
         <div>
-        <span class="releaseDate">${release_date}</span>
-        <img src="${poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${title}">
+        <span class="releaseDate">${escapeHtml(release_date)}</span>
+        <img src="${posterSrc}" alt="${safeTitle}">
         </div>
         <div class="movie-info">
-        <h3>${title}</h3>
+        <h3>${safeTitle}</h3>
         <span class="rating ${getColor(vote_average)}">${vote_average}</span>
         <button class="favorite-btn" data-id="${id}" data-type="movie" title="Add to favorites">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -608,8 +669,8 @@ function showMovies(data) {
         </div>
         <div class="overview">
         <span>
-        <h3>${title}</h3>
-        <span class="overview-content">${overview}</span>
+        <h3>${safeTitle}</h3>
+        <span class="overview-content">${safeOverview}</span>
         <br>
         <button class="watchnow">Watch Now</button>
         </span>
@@ -632,13 +693,17 @@ function showTvShows(data) {
         tvEl.classList.add('tvshow');
         tvEl.dataset.item = JSON.stringify({...tvshow, media_type: 'tv'});
 
+        const safeName = escapeHtml(name);
+        const safeOverview = escapeHtml(overview);
+        const posterSrc = poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
+
         tvEl.innerHTML = `
       <div>
-      <span class="releaseDate">${first_air_date}</span>
-      <img src="${poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${name}">
+      <span class="releaseDate">${escapeHtml(first_air_date)}</span>
+      <img src="${posterSrc}" alt="${safeName}">
       </div>
       <div class="movie-info">
-      <h3>${name}</h3>
+      <h3>${safeName}</h3>
       <span class="rating ${getColor(vote_average)}">${vote_average}</span>
       <button class="favorite-btn" data-id="${id}" data-type="tv" title="Add to favorites">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -647,8 +712,8 @@ function showTvShows(data) {
       </button>
       </div>
       <div class="overview">
-    <h3>${name}</h3>
-    <span class="overview-content">${overview}</span>
+    <h3>${safeName}</h3>
+    <span class="overview-content">${safeOverview}</span>
     <br>
     <button class="watchnow">Watch Now</button>
     </span>
@@ -698,8 +763,9 @@ function getColor(vote) {
 
 function searchResultsAndDisplayWrapper(ev) {
     let whichPage = localStorage.getItem('page');
+    const searchQuery = ev.target.value;
 
-    if (ev.target.value == '') {
+    if (!searchQuery) {
         if (currentSection === 'bollywood') {
             LoadMovieOrTv('movie', BOLLYWOOD_url);
         } else if (currentSection === 'nepali') {
@@ -716,28 +782,30 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv(whichPage, TV_url);
         }
     } else {
-        let searchQuery = ev.target.value;
-        if (currentSection === 'bollywood') {
-            let url_search = SEARCH_url + searchQuery + '&with_original_language=hi';
-            LoadMovieOrTv('movie', url_search);
-        } else if (currentSection === 'nepali') {
-            let url_search = SEARCH_url + searchQuery + '&with_original_language=ne';
-            LoadMovieOrTv('movie', url_search);
-        } else if (currentSection === 'anime') {
-            let url_search = TV_Search_url + searchQuery + '&with_original_language=ja';
-            LoadMovieOrTv('tv', url_search);
-        } else if (currentSection === 'drama') {
-            let url_search = TV_Search_url + searchQuery + '&with_original_language=hi';
-            LoadMovieOrTv('tv', url_search);
-        } else if (currentSection === 'sports') {
-            let url_search = TV_Search_url + searchQuery + '&with_original_language=hi';
-            LoadMovieOrTv('tv', url_search);
+        const langMap = {
+            bollywood: 'movie',
+            nepali: 'movie',
+            anime: 'tv',
+            drama: 'tv',
+            sports: 'tv'
+        };
+        const langCodeMap = {
+            bollywood: 'hi',
+            nepali: 'ne',
+            anime: 'ja',
+            drama: 'hi',
+            sports: 'hi'
+        };
+
+        if (currentSection && langMap[currentSection]) {
+            const type = langMap[currentSection];
+            const lang = langCodeMap[currentSection];
+            const url = buildSearchUrl(type, searchQuery, { with_original_language: lang });
+            LoadMovieOrTv(type, url);
         } else if (whichPage == 'movie') {
-            let url_search = SEARCH_url + searchQuery;
-            LoadMovieOrTv(whichPage, url_search);
-        } else if (whichPage == 'tv') {
-            let url_search = TV_Search_url + searchQuery;
-            LoadMovieOrTv(whichPage, url_search);
+            LoadMovieOrTv('movie', buildSearchUrl('movie', searchQuery));
+        } else {
+            LoadMovieOrTv('tv', buildSearchUrl('tv', searchQuery));
         }
     }
 }
@@ -761,28 +829,31 @@ async function loadNepaliFeatured() {
     if (!container) return;
 
     try {
-        const res = await fetch(BASE_url + '/movie/' + NEPALI_FEATURED_ID + '?' + API_key);
+        const res = await fetch(tmdbUrl('movie/' + NEPALI_FEATURED_ID));
         const movie = await res.json();
+        const safeTitle = escapeHtml(movie.title || '');
+        const safeOverview = escapeHtml(movie.overview ? movie.overview.substring(0, 200) + '...' : '');
+        const backdropUrl = movie.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + movie.backdrop_path : '';
+        const releaseDate = escapeHtml(movie.release_date || '');
+        const rating = movie.vote_average ? ' · ⭐ ' + movie.vote_average.toFixed(1) : '';
+        const movieJson = JSON.stringify(movie).replace(/"/g, '&quot;');
 
         container.innerHTML = `
-            <div style="display: flex; align-items: center; width: 100%; min-height: 300px;">
-                <img src="${movie.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + movie.backdrop_path : ''}"
-                     alt="${movie.title}"
-                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4;">
-                <div style="position: relative; z-index: 2; padding: 40px; max-width: 600px;">
-                    <span style="background: #e94560; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase;">Featured Nepali Film</span>
-                    <h1 style="color: white; font-size: 32px; margin: 16px 0 8px; text-shadow: 2px 2px 8px rgba(0,0,0,0.6);">${movie.title}</h1>
-                    <p style="color: #ccc; font-size: 14px; margin-bottom: 6px;">${movie.release_date || ''} ${movie.vote_average ? ' · ⭐ ' + movie.vote_average.toFixed(1) : ''}</p>
-                    <p style="color: #ddd; font-size: 14px; line-height: 1.6; margin-bottom: 20px; max-width: 500px;">${movie.overview ? movie.overview.substring(0, 200) + '...' : ''}</p>
-                    <button onclick="openStream(${JSON.stringify(movie).replace(/"/g, '&quot;')}, 'movie')"
-                            style="background: #e94560; color: white; border: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.3s;">
+            <div class="nepali-banner">
+                <img src="${backdropUrl}" alt="${safeTitle}" class="nepali-banner-img">
+                <div class="nepali-banner-content">
+                    <span class="nepali-banner-tag">Featured Nepali Film</span>
+                    <h1 class="nepali-banner-title">${safeTitle}</h1>
+                    <p class="nepali-banner-meta">${releaseDate}${rating}</p>
+                    <p class="nepali-banner-desc">${safeOverview}</p>
+                    <button class="nepali-banner-btn" onclick="openStream(${movieJson}, 'movie')">
                         ▶ Watch Now
                     </button>
                 </div>
             </div>
         `;
     } catch (e) {
-        container.innerHTML = '<div style="color: #888; padding: 40px;">Featured movie unavailable</div>';
+        container.innerHTML = '<div class="nepali-banner-empty">Featured movie unavailable</div>';
     }
 }
 
@@ -839,9 +910,11 @@ function loadWatchHistory() {
         const div = document.createElement('div');
         div.classList.add('movie');
         div.dataset.item = JSON.stringify({...item, media_type: item.type});
+        const safeTitle = escapeHtml(item.title || '');
+        const posterSrc = item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
         div.innerHTML = `
-            <img src="${item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${item.title}">
-            <div class="movie-info"><h3>${item.title}</h3></div>
+            <img src="${posterSrc}" alt="${safeTitle}">
+            <div class="movie-info"><h3>${safeTitle}</h3></div>
         `;
         div.addEventListener('click', () => {
             const data = JSON.parse(div.dataset.item);
@@ -894,9 +967,8 @@ function loadFavorites() {
 
     favorites.forEach(item => {
         const whichPage = item.type === 'movie' ? 'movie' : 'tv';
-        const url = whichPage === 'movie'
-            ? BASE_url + '/movie/' + item.id + '?' + API_key
-            : BASE_url + '/tv/' + item.id + '?' + API_key;
+        const endpoint = whichPage === 'movie' ? 'movie/' + item.id : 'tv/' + item.id;
+        const url = tmdbUrl(endpoint);
 
         fetch(url)
             .then(res => res.json())
@@ -904,9 +976,11 @@ function loadFavorites() {
                 const div = document.createElement('div');
                 div.classList.add('movie');
                 div.dataset.item = JSON.stringify({...data, media_type: item.type});
+                const displayName = escapeHtml(data.title || data.name || '');
+                const posterSrc = data.poster_path ? IMG_url + data.poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
                 div.innerHTML = `
-                    <img src="${data.poster_path ? IMG_url + data.poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'}" alt="${data.title || data.name}">
-                    <div class="movie-info"><h3>${data.title || data.name}</h3></div>
+                    <img src="${posterSrc}" alt="${displayName}">
+                    <div class="movie-info"><h3>${displayName}</h3></div>
                 `;
                 div.addEventListener('click', () => {
                     const streamData = JSON.parse(div.dataset.item);
@@ -948,7 +1022,7 @@ function openStream(item, mediaType) {
 // Load seasons and episodes for TV shows
 async function loadSeasonEpisode(tvId) {
     try {
-        const detailsUrl = BASE_url + '/tv/' + tvId + '?' + API_key;
+        const detailsUrl = tmdbUrl('tv/' + tvId);
         const res = await fetch(detailsUrl);
         const details = await res.json();
 
@@ -977,7 +1051,7 @@ async function loadSeasonEpisode(tvId) {
 
 async function loadEpisodes(tvId, seasonNum) {
     try {
-        const seasonUrl = BASE_url + '/tv/' + tvId + '/season/' + seasonNum + '?' + API_key;
+        const seasonUrl = tmdbUrl('tv/' + tvId + '/season/' + seasonNum);
         const res = await fetch(seasonUrl);
         const data = await res.json();
 
@@ -1026,12 +1100,8 @@ function loadServer(index) {
 // Load trailer
 async function loadTrailer(item) {
     const whichPage = item.media_type === 'tv' ? 'tv' : 'movie';
-    let url;
-    if (whichPage === 'movie') {
-        url = BASE_url + '/movie/' + item.id + '/videos?' + API_key;
-    } else {
-        url = BASE_url + '/tv/' + item.id + '/videos?' + API_key;
-    }
+    const endpoint = whichPage === 'movie' ? 'movie/' + item.id + '/videos' : 'tv/' + item.id + '/videos';
+    const url = tmdbUrl(endpoint);
 
     try {
         const res = await fetch(url);
@@ -1113,50 +1183,3 @@ function clearFavorites() {
     document.getElementById('favoritesSection').style.display = 'none';
     updateFavoriteButtons();
 }
-
-// Initialize after DOM loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Server tab clicks
-    document.querySelectorAll('.server-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            const serverIndex = parseInt(tab.dataset.server);
-            loadServer(serverIndex);
-        });
-    });
-
-    // Language selector
-    const langSelect = document.getElementById('languageSelect');
-    if (langSelect) {
-        langSelect.addEventListener('change', (e) => {
-            const lang = e.target.value;
-            const frame = document.getElementById('streamFrame');
-            if (frame.src) {
-                frame.src = frame.src.split('&lang=')[0] + '&lang=' + lang;
-            }
-        });
-    }
-
-    // Season/Episode selectors
-    const seasonSelect = document.getElementById('seasonSelect');
-    const episodeSelect = document.getElementById('episodeSelect');
-    if (seasonSelect) {
-        seasonSelect.addEventListener('change', async (e) => {
-            if (currentStreamItem) {
-                const seasonNum = parseInt(e.target.value);
-                await loadEpisodes(currentStreamItem.id, seasonNum);
-            }
-        });
-    }
-    if (episodeSelect) {
-        episodeSelect.addEventListener('change', (e) => {
-            currentEpisode = parseInt(e.target.value);
-            loadServer(currentServerIndex);
-        });
-    }
-
-    // Clear favorites button
-    const clearBtn = document.getElementById('clearFavorites');
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearFavorites);
-    }
-});
