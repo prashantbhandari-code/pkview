@@ -299,6 +299,16 @@ const STREAMING_SERVERS = [
         name: '2Embed',
         movie: (id) => `https://2embed.skin/embed/${id}`,
         tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
+    },
+    {
+        name: 'Streamtape',
+        movie: (id) => `https://streamtape.com/e/${id}`,
+        tv: (id, s, e) => `https://streamtape.com/e/${id}`
+    },
+    {
+        name: 'StreamWish',
+        movie: (id) => `https://streamwish.to/e/${id}`,
+        tv: (id, s, e) => `https://streamwish.to/e/${id}`
     }
 ];
 
