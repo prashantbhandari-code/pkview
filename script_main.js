@@ -67,12 +67,15 @@ function openDramaStream(dramaId) {
                 item.media_type = 'tv';
                 openStream(item);
             } else {
-                // Fallback: open search in a new tab
-                window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(drama.title + ' Hindi drama full episode'), '_blank');
+                // Not on TMDB — open first streaming server with search
+                const serverUrl = STREAMING_SERVERS[0].tv('', 1, 1).replace(/\/tv\/\d+\/\d+\/\d+/, '/search/' + encodeURIComponent(drama.title));
+                window.open(serverUrl, '_blank');
             }
         })
         .catch(() => {
-            window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(drama.title + ' Hindi drama full episode'), '_blank');
+            // Fallback — open first streaming server with search
+            const serverUrl = STREAMING_SERVERS[0].tv('', 1, 1).replace(/\/tv\/\d+\/\d+\/\d+/, '/search/' + encodeURIComponent(drama.title));
+            window.open(serverUrl, '_blank');
         });
 }
 
