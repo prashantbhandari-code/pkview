@@ -48,11 +48,28 @@ const API_url = buildDiscoverUrl('movie', {});
 const TV_url = tmdbUrl('tv/popular', { 'vote_count.gte': 100 });
 const BOLLYWOOD_url = buildDiscoverUrl('movie', { with_original_language: 'hi', sort_by: 'primary_release_date.desc', 'vote_count.gte': 50 });
 const ANIME_url = buildDiscoverUrl('tv', { with_genres: 16, with_original_language: 'ja', 'vote_count.gte': 50 });
-const SPORTS_url = buildDiscoverUrl('tv', { with_genres: 10769, with_original_language: 'hi', sort_by: 'popularity.desc', 'vote_count.gte': 10 });
+const SPORTS_TV_url = buildDiscoverUrl('tv', { with_genres: 10769, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
+const SPORTS_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 28, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
 const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vote_count.gte': 0 })
 
 // Drama data
 
+
+// Sports content with fallback
+async function loadSportsContent() {
+    try {
+        const res = await fetch(SPORTS_TV_url);
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+            LoadMovieOrTv('tv', SPORTS_TV_url);
+        } else {
+            // Fallback to popular action/sports movies
+            LoadMovieOrTv('movie', SPORTS_MOVIE_url);
+        }
+    } catch (e) {
+        LoadMovieOrTv('movie', SPORTS_MOVIE_url);
+    }
+}
 
 // Live sports data and stream player
 let liveSportsData = null;
@@ -67,7 +84,7 @@ async function loadLiveSports() {
         liveSportsData = data;
         renderLiveSports(container, data);
     } catch (e) {
-        container.innerHTML = '<div class="live-sports-empty">No live matches right now</div>';
+        container.innerHTML = '<div class="live-sports-empty">📺 No live matches right now — check back during major events!</div>';
     }
 }
 
@@ -86,7 +103,7 @@ function renderLiveSports(container, data) {
     });
 
     if (matches.length === 0) {
-        container.innerHTML = '<div class="live-sports-empty">No live matches right now. Check back later!</div>';
+        container.innerHTML = '<div class="live-sports-empty">📺 No live matches right now — check back during major events!</div>';
         return;
     }
 
@@ -470,7 +487,7 @@ function switchSection(section) {
         LoadMovieOrTv('tv', ANIME_url);
     } else if (section === 'sports') {
         currentSection = 'sports';
-        LoadMovieOrTv('tv', SPORTS_url);
+        loadSportsContent();
         loadLiveSports();
     }
 }
@@ -742,7 +759,7 @@ function searchResultsAndDisplayWrapper(ev) {
         } else if (currentSection === 'anime') {
             LoadMovieOrTv('tv', ANIME_url);
         } else if (currentSection === 'sports') {
-            LoadMovieOrTv('tv', SPORTS_url);
+            loadSportsContent();
         } else if (whichPage == 'movie') {
             LoadMovieOrTv(whichPage, API_url);
         } else if (whichPage == 'tv') {
