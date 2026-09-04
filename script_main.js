@@ -158,20 +158,17 @@ const ANIME_SERVERS = [
         url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        name: 'VidPlus',
-        url: (id, ep, lang) => `https://player.vidplus.to/embed/anime/${id}/${ep || 1}?dub=${lang === 'dub'}`
-    },
-    {
         name: 'MegaPlay',
         url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        name: 'VidNest',
-        url: (id, ep) => `https://vidnest.fun/anime/${id}/${ep || 1}`
+        name: 'VidPlus',
+        url: (id, ep, lang) => `https://player.vidplus.to/embed/anime/${id}/${ep || 1}?dub=${lang === 'dub'}`
     },
     {
-        name: 'Embed.su',
-        url: (id, ep) => `https://embed.su/embed/anime/${id}/${ep || 1}`
+        name: 'Miruro',
+        url: (id, ep) => `https://www.miruro.tv/watch?id=${id}${ep ? '&ep=' + ep : ''}`,
+        external: true
     }
 ];
 
@@ -375,6 +372,15 @@ function loadAnimeServer(index) {
     if (!animeId) return;
 
     const server = ANIME_SERVERS[index];
+    if (server.external) {
+        // Open in new tab instead of iframe
+        window.open(server.url(animeId, currentAnimeEpisode, currentAnimeLang), '_blank');
+        // Revert active tab to previous server
+        document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
+            tab.classList.toggle('active', i === currentServerIndex && i !== index);
+        });
+        return;
+    }
     frame.src = server.url(animeId, currentAnimeEpisode, currentAnimeLang);
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
