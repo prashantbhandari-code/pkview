@@ -2,6 +2,98 @@ const PROXY_BASE = '/api/tmdb';
 const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
 const NEPALI_FEATURED_ID = 1423966;
+const ANILIST_API = 'https://graphql.anilist.co';
+
+// --- AniList GraphQL Queries ---
+const ANILIST_QUERIES = {
+    trending: `query ($page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+            media(sort: TRENDING_DESC, type: ANIME, status: RELEASING) {
+                id
+                title { romaji english native }
+                coverImage { large medium color }
+                bannerImage
+                averageScore
+                meanScore
+                popularity
+                episodes
+                status
+                format
+                genres
+                description(asHtml: false)
+                nextAiringEpisode { episode timeUntilAiring }
+            }
+        }
+    }`,
+    popular: `query ($page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+            media(sort: POPULARITY_DESC, type: ANIME) {
+                id
+                title { romaji english native }
+                coverImage { large medium color }
+                bannerImage
+                averageScore
+                meanScore
+                popularity
+                episodes
+                status
+                format
+                genres
+                description(asHtml: false)
+            }
+        }
+    }`,
+    topRated: `query ($page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+            media(sort: SCORE_DESC, type: ANIME) {
+                id
+                title { romaji english native }
+                coverImage { large medium color }
+                bannerImage
+                averageScore
+                meanScore
+                popularity
+                episodes
+                status
+                format
+                genres
+                description(asHtml: false)
+            }
+        }
+    }`,
+    search: `query ($search: String, $page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+            media(search: $search, type: ANIME) {
+                id
+                title { romaji english native }
+                coverImage { large medium color }
+                bannerImage
+                averageScore
+                meanScore
+                popularity
+                episodes
+                status
+                format
+                genres
+                description(asHtml: false)
+            }
+        }
+    }`
+};
+
+// Fetch anime from AniList GraphQL
+async function fetchAniList(queryName, variables = {}) {
+    const query = ANILIST_QUERIES[queryName];
+    if (!query) throw new Error('Unknown query: ' + queryName);
+    const res = await fetch(ANILIST_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query, variables })
+    });
+    if (!res.ok) throw new Error('AniList API error');
+    const json = await res.json();
+    return json.data?.Page?.results || json.data?.Page?.media || [];
+}
 
 // --- XSS sanitization ---
 function escapeHtml(str) {
@@ -59,7 +151,198 @@ const WEB_SERIES_url = buildDiscoverUrl('tv', { with_genres: 18, sort_by: 'popul
 const DOCU_url = buildDiscoverUrl('tv', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 100 });
 
-// Load Hindi dubbed K-dramas
+// --- Miruro & Anime Streaming Servers ---
+const ANIME_SERVERS = [
+    {
+        name: 'Miruro',
+        url: (id, ep) => `https://www.miruro.tv/watch?id=${id}${ep ? '&ep=' + ep : ''}`
+    },
+    {
+        name: 'AniWave',
+        url: (id, ep) => `https://aniwatch.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+    },
+    {
+        name: 'Zoro',
+        url: (id, ep) => `https://aniwatch.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+    },
+    {
+        name: 'AnimeKai',
+        url: (id, ep) => `https://animekai.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+    },
+    {
+        name: '9Anime',
+        url: (id, ep) => `https://9anime.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+    }
+];
+
+let currentAnimeSort = 'trending';
+let currentAnimePage = 1;
+let totalAnimePages = 5;
+
+// Display anime from AniList data
+function showAniListAnime(data) {
+    const main = document.querySelector('#main');
+    main.innerHTML = '';
+    hideSpinner();
+
+    data.forEach((anime, index) => {
+        const title = anime.title?.english || anime.title?.romaji || anime.title?.native || 'Untitled';
+        const poster = anime.coverImage?.large || anime.coverImage?.medium || '';
+        const score = anime.averageScore || anime.meanScore || 0;
+        const genres = (anime.genres || []).slice(0, 2).join(', ');
+        const desc = (anime.description || '').replace(/<[^>]*>/g, '').substring(0, 150);
+        const status = anime.status || '';
+        const episodes = anime.episodes || '?';
+
+        const card = document.createElement('div');
+        card.classList.add('movie', 'fade-in-up');
+        if (index < 8) card.classList.add('stagger-' + (index + 1));
+        card.dataset.item = JSON.stringify({
+            id: anime.id,
+            title: title,
+            poster_path: poster,
+            vote_average: score / 10,
+            overview: desc,
+            media_type: 'anime',
+            anilist_id: anime.id,
+            episodes: episodes,
+            genres: genres,
+            status: status
+        });
+        const safeTitle = escapeHtml(title);
+        const safeDesc = escapeHtml(desc);
+        const safeGenres = escapeHtml(genres);
+
+        card.innerHTML = `
+        <div>
+        <span class="releaseDate">${escapeHtml(status)}</span>
+        <img src="${poster}" alt="${safeTitle}" loading="lazy">
+        </div>
+        <div class="movie-info">
+        <h3>${safeTitle}</h3>
+        <span class="rating ${getColor(score / 10)}">${(score / 10).toFixed(1)}</span>
+        <button class="favorite-btn" data-id="${anime.id}" data-type="anime" title="Add to favorites">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
+            </svg>
+        </button>
+        </div>
+        <div class="overview">
+        <h3>${safeTitle}</h3>
+        <div style="font-size:0.75rem;color:#aaa;margin-bottom:6px;">${safeGenres} · ${escapeHtml(episodes)} eps</div>
+        <span class="overview-content">${safeDesc}...</span>
+        <br>
+        <button class="watchnow">Watch Now</button>
+        </span>
+        </div>
+        `;
+        main.appendChild(card);
+    });
+
+    // Setup watch buttons for anime
+    document.querySelectorAll('.watchnow').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.movie, .tvshow');
+            if (card && card.dataset.item) {
+                const item = JSON.parse(card.dataset.item);
+                openAnimeStream(item);
+            }
+        });
+    });
+    setupFavoriteButtons();
+}
+
+// Load anime with sort option
+async function loadAnimeFromAniList(sort = 'trending', page = 1) {
+    currentAnimeSort = sort;
+    currentAnimePage = page;
+    showSpinner();
+    try {
+        const data = await fetchAniList(sort, { page, perPage: 20 });
+        if (data.length > 0) {
+            showAniListAnime(data);
+            // AniList pagination
+            totalAnimePages = 5;
+            if (window.currentBtn) window.currentBtn.innerText = page;
+            if (window.prevBtn) window.prevBtn.classList.toggle('disabled', page <= 1);
+            if (window.nextBtn) window.nextBtn.classList.toggle('disabled', page >= totalAnimePages);
+        } else {
+            hideSpinner();
+            document.querySelector('#main').innerHTML = '<div class="empty-state fade-in"><div style="font-size:2.5rem;margin-bottom:12px;">🎬</div><p>No anime found</p></div>';
+        }
+    } catch (err) {
+        hideSpinner();
+        console.error('AniList error:', err);
+        // Fallback to TMDB anime
+        LoadMovieOrTv('tv', ANIME_url);
+    }
+}
+
+// Search anime on AniList
+async function searchAniListAnime(query, page = 1) {
+    showSpinner();
+    try {
+        const data = await fetchAniList('search', { search: query, page, perPage: 20 });
+        if (data.length > 0) {
+            showAniListAnime(data);
+            totalAnimePages = 5;
+            if (window.currentBtn) window.currentBtn.innerText = page;
+            if (window.prevBtn) window.prevBtn.classList.toggle('disabled', page <= 1);
+            if (window.nextBtn) window.nextBtn.classList.toggle('disabled', page >= totalAnimePages);
+        } else {
+            hideSpinner();
+            document.querySelector('#main').innerHTML = '<div class="empty-state fade-in"><div style="font-size:2.5rem;margin-bottom:12px;">🔍</div><p>No anime found for "' + escapeHtml(query) + '"</p></div>';
+        }
+    } catch (err) {
+        hideSpinner();
+        console.error('AniList search error:', err);
+        // Fallback to TMDB search
+        LoadMovieOrTv('tv', buildSearchUrl('tv', query, { with_original_language: 'ja' }));
+    }
+}
+
+// Open anime streaming modal with Miruro servers
+function openAnimeStream(item) {
+    addToHistory(item);
+    currentStreamItem = item;
+    currentServerIndex = 0;
+    const modal = document.getElementById('streamModal');
+    const title = document.getElementById('streamTitle');
+    title.textContent = item.title || 'Anime';
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Hide movie/TV server tabs, show anime server tabs
+    document.querySelector('.server-tabs').style.display = 'none';
+    document.getElementById('animeServerTabs').style.display = 'flex';
+    document.getElementById('seasonSelectContainer').style.display = 'none';
+
+    LoadAnimeServer(0);
+    loadTrailer(item);
+}
+
+function loadAnimeServer(index) {
+    currentServerIndex = index;
+    const frame = document.getElementById('streamFrame');
+    const animeId = currentStreamItem?.anilist_id || currentStreamItem?.id;
+    if (!animeId) return;
+
+    const server = ANIME_SERVERS[index];
+    frame.src = server.url(animeId);
+    frame.style.display = 'block';
+    document.getElementById('serverError').style.display = 'none';
+
+    document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+    });
+}
+
+function switchAnimeServer(index) {
+    loadAnimeServer(index);
+}
+
+// --- Hindi dubbed K-dramas ---
 async function loadHindiKDramas() {
     try {
         // Search for popular Korean dramas with Hindi in title
@@ -603,7 +886,7 @@ function switchSection(section) {
         LoadMovieOrTv('movie', NEPALI_url);
     } else if (section === 'anime') {
         currentSection = 'anime';
-        LoadMovieOrTv('tv', ANIME_url);
+        loadAnimeFromAniList('trending', 1);
     } else if (section === 'korean') {
         currentSection = 'korean';
         // Try Hindi dubbed K-dramas first, fallback to Korean if empty
@@ -654,6 +937,10 @@ function highlightSelection() {
 }
 
 function pageCall(page) {
+    if (currentSection === 'anime') {
+        loadAnimeFromAniList(currentAnimeSort, page);
+        return;
+    }
     try {
         const url = new URL(lastUrl, window.location.origin);
         url.searchParams.set('page', page);
@@ -890,7 +1177,7 @@ function searchResultsAndDisplayWrapper(ev) {
         } else if (currentSection === 'nepali') {
             LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
-            LoadMovieOrTv('tv', ANIME_url);
+            loadAnimeFromAniList('trending', 1);
         } else if (currentSection === 'korean') {
             LoadMovieOrTv('tv', KOREAN_TV_url);
         } else if (currentSection === 'webseries') {
@@ -924,7 +1211,10 @@ function searchResultsAndDisplayWrapper(ev) {
             sports: 'hi'
         };
 
-        if (currentSection && langMap[currentSection]) {
+        if (currentSection === 'anime') {
+            // Use AniList search for anime section
+            searchAniListAnime(searchQuery, 1);
+        } else if (currentSection && langMap[currentSection]) {
             const type = langMap[currentSection];
             const lang = langCodeMap[currentSection];
             const url = buildSearchUrl(type, searchQuery, { with_original_language: lang });
@@ -1294,6 +1584,8 @@ function closeStream() {
     const trailerBtn = document.getElementById('trailerBtn');
     const errorMsg = document.getElementById('serverError');
     const seasonContainer = document.getElementById('seasonSelectContainer');
+    const movieTabs = document.querySelector('.server-tabs');
+    const animeTabs = document.getElementById('animeServerTabs');
 
     modal.classList.remove('active');
     streamFrame.src = '';
@@ -1303,6 +1595,9 @@ function closeStream() {
     trailerBtn.textContent = 'Watch Trailer';
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
+    // Reset to movie/TV tabs
+    if (movieTabs) movieTabs.style.display = 'flex';
+    if (animeTabs) animeTabs.style.display = 'none';
     document.body.style.overflow = '';
 }
 

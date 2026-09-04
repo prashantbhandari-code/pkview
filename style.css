@@ -1075,6 +1075,51 @@ hr {
   box-shadow: 0 0 10px rgba(255, 19, 97, 0.6);
 }
 
+/* Anime Server Tabs */
+.anime-server-tabs {
+  padding: 0 24px;
+  background: linear-gradient(180deg, #16213e 0%, rgba(22, 33, 62, 0.8) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.anime-server-tab {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 12px 18px;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.anime-server-tab:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.anime-server-tab.active {
+  color: #ff1361;
+}
+
+.anime-server-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 3px;
+  background: #ff1361;
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 10px rgba(255, 19, 97, 0.6);
+}
+
 /* Season/Episode Selector */
 .season-select-container {
   padding: 16px 28px;
@@ -1860,6 +1905,23 @@ body.light-theme .server-tab:hover {
 body.light-theme .server-tab.active {
   border-bottom-color: #ff1361;
   background-color: rgba(255, 19, 97, 0.06);
+  color: #ff1361;
+}
+
+body.light-theme .anime-server-tabs {
+  background: linear-gradient(180deg, #f0f0f5 0%, rgba(240, 240, 245, 0.8) 100%);
+  border-top-color: #e9ecef;
+}
+
+body.light-theme .anime-server-tab {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+body.light-theme .anime-server-tab:hover {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+body.light-theme .anime-server-tab.active {
   color: #ff1361;
 }
 
