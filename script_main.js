@@ -21,7 +21,15 @@ const ANILIST_QUERIES = {
                 format
                 genres
                 description(asHtml: false)
-                nextAiringEpisode { episode timeUntilAiring }
+                nextAiringEpisode { episode timeUntilAiring airingAt }
+                startDate { year month day }
+                endDate { year month day }
+                studios { nodes { name isAnimationStudio } }
+                source
+                countryOfOrigin
+                streamingEpisodes { title thumbnail url site }
+                relations { edges { node { id title { romaji english } format } relationType } }
+                synonyms
             }
         }
     }`,
@@ -40,6 +48,15 @@ const ANILIST_QUERIES = {
                 format
                 genres
                 description(asHtml: false)
+                nextAiringEpisode { episode timeUntilAiring airingAt }
+                startDate { year month day }
+                endDate { year month day }
+                studios { nodes { name isAnimationStudio } }
+                source
+                countryOfOrigin
+                streamingEpisodes { title thumbnail url site }
+                relations { edges { node { id title { romaji english } format } relationType } }
+                synonyms
             }
         }
     }`,
@@ -58,6 +75,15 @@ const ANILIST_QUERIES = {
                 format
                 genres
                 description(asHtml: false)
+                nextAiringEpisode { episode timeUntilAiring airingAt }
+                startDate { year month day }
+                endDate { year month day }
+                studios { nodes { name isAnimationStudio } }
+                source
+                countryOfOrigin
+                streamingEpisodes { title thumbnail url site }
+                relations { edges { node { id title { romaji english } format } relationType } }
+                synonyms
             }
         }
     }`,
@@ -76,6 +102,15 @@ const ANILIST_QUERIES = {
                 format
                 genres
                 description(asHtml: false)
+                nextAiringEpisode { episode timeUntilAiring airingAt }
+                startDate { year month day }
+                endDate { year month day }
+                studios { nodes { name isAnimationStudio } }
+                source
+                countryOfOrigin
+                streamingEpisodes { title thumbnail url site }
+                relations { edges { node { id title { romaji english } format } relationType } }
+                synonyms
             }
         }
     }`
@@ -94,6 +129,25 @@ async function fetchAniList(queryName, variables = {}) {
     const json = await res.json();
     return json.data?.Page?.results || json.data?.Page?.media || [];
 }
+
+// --- Miruro broadcast note system ---
+function getBroadcastNote(a){const s=a.status||'',n=a.nextAiringEpisode,e=a.episodes,sd=a.startDate,ed=a.endDate;if(n&&n.timeUntilAiring>0){const d=Math.floor(n.timeUntilAiring/86400),h=Math.floor((n.timeUntilAiring%86400)/3600),m=Math.floor((n.timeUntilAiring%3600)/60);let t='';if(d>0)t+=d+'d ';if(h>0)t+=h+'h ';if(m>0&&d===0)t+=m+'m';return{text:'Ep '+n.episode+' in '+t.trim(),type:'airing',icon:'\u{1F4FA}'};}if(s==='FINISHED'){const e2=ed?ed.year+'-'+String(ed.month).padStart(2,'0')+'-'+String(ed.day).padStart(2,'0'):'';return{text:(e||'?')+' episodes'+(e2?' \u00b7 Ended '+e2:''),type:'finished',icon:'\u2705'};}if(s==='NOT_YET_RELEASED'){const d2=sd?sd.year+'-'+String(sd.month).padStart(2,'0')+'-'+String(sd.day).padStart(2,'0'):'';return{text:d2?'Starts '+d2:'Upcoming',type:'upcoming',icon:'\u{1F51C}'};}if(s==='HIATUS')return{text:'On Hiatus',type:'hiatus',icon:'\u23F8\uFE0F'};if(s==='RELEASING')return{text:'Airing \u00b7 Schedule TBA',type:'airing',icon:'\u{1F4FA}'};return{text:s,type:'unknown',icon:'\u{1F4CB}'};}
+function getFormatBadge(f){return{TV:'TV',TV_SHORT:'TV Short',MOVIE:'Movie',OVA:'OVA',ONA:'ONA',SPECIAL:'Special',MUSIC:'Music'}[f]||f||'';}
+function getFormatClass(f){return{TV:'fmt-tv',MOVIE:'fmt-movie',OVA:'fmt-ova',ONA:'fmt-ona',SPECIAL:'fmt-special'}[f]||'fmt-default';}
+function getScoreClass(s){return s>=8?'score-high':s>=6?'score-mid':'score-low';}
+function getSequel(a){if(!a.relations?.edges)return null;for(const e of a.relations.edges){if(e.relationType==='SEQUEL')return e.node;}return null;}
+function getStudio(a){if(!a.studios?.nodes)return '';const m=a.studios.nodes.find(s=>s.isAnimationStudio);return m?m.name:(a.studios.nodes[0]?.name||'');}
+
+let _heroInterval=null,_heroIdx=0;
+function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
+function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h2 class="anime-hero-title">'+escapeHtml(t)+'</h2><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
+}
+function openAnimeStreamFromHero(i){const a=window._animeHeroData?.[i];if(!a)return;openAnimeStream({id:a.id,title:a.title?.english||a.title?.romaji||a.title?.native||'Untitled',anilist_id:a.id,episodes:a.episodes,media_type:'anime'});}
+function showAnimeSortBar(){const b=document.getElementById('animeSortBar');if(b)b.style.display='flex';}
+function hideAnimeSortBar(){const b=document.getElementById('animeSortBar');if(b)b.style.display='none';}
+function setActiveSortBtn(s){document.querySelectorAll('.sort-btn').forEach(b=>b.classList.toggle('active',b.dataset.sort===s));}
+function showAnimeCommunity(){const b=document.getElementById('animeCommunity');if(b)b.style.display='block';}
+function hideAnimeCommunity(){const b=document.getElementById('animeCommunity');if(b)b.style.display='none';}
 
 // --- XSS sanitization ---
 function escapeHtml(str) {
@@ -182,69 +236,82 @@ function showAniListAnime(data) {
     main.innerHTML = '';
     hideSpinner();
 
+    window._animeHeroData = data.slice(0, 3);
+    renderAnimeHero();
+
     data.forEach((anime, index) => {
         const title = anime.title?.english || anime.title?.romaji || anime.title?.native || 'Untitled';
         const poster = anime.coverImage?.large || anime.coverImage?.medium || '';
         const score = anime.averageScore || anime.meanScore || 0;
-        const genres = (anime.genres || []).slice(0, 2).join(', ');
-        const desc = (anime.description || '').replace(/<[^>]*>/g, '').substring(0, 150);
+        const scoreVal = (score / 10).toFixed(1);
+        const genres = (anime.genres || []).slice(0, 3);
+        const desc = (anime.description || '').replace(/<[^>]*>/g, '').substring(0, 200);
         const status = anime.status || '';
         const episodes = anime.episodes || '?';
+        const format = anime.format || '';
+        const studio = getStudio(anime);
+        const broadcast = getBroadcastNote(anime);
+        const sequel = getSequel(anime);
+        const src = anime.source || '';
+        const srcMap = {MANGA:'Manga',LIGHT_NOVEL:'Light Novel',ORIGINAL:'Original',VISUAL_NOVEL:'Visual Novel'};
+        const srcLabel = srcMap[src] || src;
 
         const card = document.createElement('div');
-        card.classList.add('movie', 'fade-in-up');
+        card.classList.add('anime-card', 'fade-in-up');
         if (index < 8) card.classList.add('stagger-' + (index + 1));
         card.dataset.item = JSON.stringify({
-            id: anime.id,
-            title: title,
-            poster_path: poster,
-            vote_average: score / 10,
-            overview: desc,
-            media_type: 'anime',
-            anilist_id: anime.id,
-            episodes: episodes,
-            genres: genres,
-            status: status
+            id: anime.id, title, poster_path: poster, vote_average: score / 10,
+            overview: desc, media_type: 'anime', anilist_id: anime.id,
+            episodes, genres: genres.join(', '), status, format, studio, source: srcLabel
         });
-        const safeTitle = escapeHtml(title);
-        const safeDesc = escapeHtml(desc);
-        const safeGenres = escapeHtml(genres);
+
+        const sTitle = escapeHtml(title);
+        const sDesc = escapeHtml(desc);
+        const fmtBadge = getFormatBadge(format);
+        const fmtCls = getFormatClass(format);
+        const scCls = getScoreClass(score / 10);
+        const sequelHtml = sequel ? '<div class="anime-relation">\u2192 ' + escapeHtml(sequel.title?.english || sequel.title?.romaji || '') + '</div>' : '';
+        const studioHtml = studio ? '<div class="anime-studio">' + escapeHtml(studio) + '</div>' : '';
+        const srcHtml = srcLabel ? '<div class="anime-source">Based on: ' + escapeHtml(srcLabel) + '</div>' : '';
 
         card.innerHTML = `
-        <div>
-        <span class="releaseDate">${escapeHtml(status)}</span>
-        <img src="${poster}" alt="${safeTitle}" loading="lazy">
+        <div class="anime-card-poster">
+            <img src="${poster}" alt="${sTitle}" loading="lazy">
+            <span class="anime-format-badge ${fmtCls}">${fmtBadge}</span>
+            <span class="anime-score-badge ${scCls}">\u2605 ${scoreVal}</span>
         </div>
-        <div class="movie-info">
-        <h3>${safeTitle}</h3>
-        <span class="rating ${getColor(score / 10)}">${(score / 10).toFixed(1)}</span>
-        <button class="favorite-btn" data-id="${anime.id}" data-type="anime" title="Add to favorites">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
-            </svg>
-        </button>
+        <div class="anime-card-info">
+        <h3 class="anime-card-title">${sTitle}</h3>
+        ${studioHtml}
+        <div class="anime-card-genres">${genres.map(g => '<span class="anime-genre-tag">' + escapeHtml(g) + '</span>').join('')}</div>
+        <div class="anime-broadcast-note ${broadcast.type}">
+            <span class="broadcast-icon">${broadcast.icon}</span>
+            <span class="broadcast-text">${escapeHtml(broadcast.text)}</span>
+        </div>
+        ${srcHtml}
+        <div class="anime-card-actions">
+            <button class="watchnow anime-watch-btn">Watch Now</button>
+            <button class="favorite-btn" data-id="${anime.id}" data-type="anime" title="Add to favorites">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path></svg>
+            </button>
+        </div>
         </div>
         <div class="overview">
-        <h3>${safeTitle}</h3>
-        <div style="font-size:0.75rem;color:#aaa;margin-bottom:6px;">${safeGenres} · ${escapeHtml(episodes)} eps</div>
-        <span class="overview-content">${safeDesc}...</span>
-        <br>
-        <button class="watchnow">Watch Now</button>
+        <h3>${sTitle}</h3>
+        <div class="anime-overview-meta">${fmtBadge} \u00b7 ${episodes} eps \u00b7 ${escapeHtml(status)}${studio ? ' \u00b7 ' + escapeHtml(studio) : ''}</div>
+        <span class="overview-content">${sDesc}...</span>
+        ${sequelHtml}
+        <br><button class="watchnow">Watch Now</button>
         </span>
         </div>
         `;
         main.appendChild(card);
     });
-
-    // Setup watch buttons for anime
     document.querySelectorAll('.watchnow').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const card = btn.closest('.movie, .tvshow');
-            if (card && card.dataset.item) {
-                const item = JSON.parse(card.dataset.item);
-                openAnimeStream(item);
-            }
+            const card = btn.closest('.anime-card');
+            if (card && card.dataset.item) openAnimeStream(JSON.parse(card.dataset.item));
         });
     });
     setupFavoriteButtons();
@@ -254,6 +321,7 @@ function showAniListAnime(data) {
 async function loadAnimeFromAniList(sort = 'trending', page = 1) {
     currentAnimeSort = sort;
     currentAnimePage = page;
+    setActiveSortBtn(sort);
     showSpinner();
     try {
         const data = await fetchAniList(sort, { page, perPage: 20 });
@@ -911,6 +979,8 @@ function switchSection(section) {
         genreSection.style.display = 'flex';
     } else {
         genreSection.style.display = 'none';
+        hideAnimeSortBar();
+        hideAnimeCommunity();
     }
 
     // Show/hide sports channels
@@ -938,6 +1008,9 @@ function switchSection(section) {
         LoadMovieOrTv('movie', NEPALI_url);
     } else if (section === 'anime') {
         currentSection = 'anime';
+        showAnimeSortBar();
+        showAnimeCommunity();
+        setActiveSortBtn('trending');
         loadAnimeFromAniList('trending', 1);
     } else if (section === 'korean') {
         currentSection = 'korean';

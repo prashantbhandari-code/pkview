@@ -291,7 +291,25 @@
       <div id="nepaliFeatured" class="nepali-featured-banner"></div>
     </section>
 
+    <!-- Anime Hero Banner -->
+    <div id="animeHero" class="anime-hero" style="display:none;"></div>
+
+    <!-- Anime Sort Bar -->
+    <div id="animeSortBar" class="anime-sort-bar" style="display:none;">
+        <button class="sort-btn active" data-sort="trending" onclick="loadAnimeFromAniList('trending',1)">\uD83D\uDD25 Trending</button>
+        <button class="sort-btn" data-sort="popular" onclick="loadAnimeFromAniList('popular',1)">\u2B50 Popular</button>
+        <button class="sort-btn" data-sort="topRated" onclick="loadAnimeFromAniList('topRated',1)">\uD83C\uDFC6 Top Rated</button>
+    </div>
+
     <main id="main"></main>
+
+    <!-- Anime Community Block -->
+    <section id="animeCommunity" class="anime-community" style="display:none;">
+        <div class="anime-community-inner">
+            <span>Powered by <a href="https://anilist.co" target="_blank" rel="noopener">AniList</a></span>
+            <a href="https://anilist.co" target="_blank" rel="noopener" class="community-link">Track your anime \u2192</a>
+        </div>
+    </section>
 
     <div class="pagination">
       <div class="page" id="prev">Prev</div>
