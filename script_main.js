@@ -154,24 +154,24 @@ const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'po
 // --- Miruro & Anime Streaming Servers ---
 const ANIME_SERVERS = [
     {
-        name: 'Miruro',
-        url: (id, ep) => `https://www.miruro.tv/watch?id=${id}${ep ? '&ep=' + ep : ''}`
+        name: 'Megavid',
+        url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        name: 'AniWave',
-        url: (id, ep) => `https://aniwatch.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+        name: 'VidPlus',
+        url: (id, ep, lang) => `https://player.vidplus.to/embed/anime/${id}/${ep || 1}?dub=${lang === 'dub'}`
     },
     {
-        name: 'Zoro',
-        url: (id, ep) => `https://aniwatch.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+        name: 'MegaPlay',
+        url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        name: 'AnimeKai',
-        url: (id, ep) => `https://animekai.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+        name: 'VidNest',
+        url: (id, ep) => `https://vidnest.fun/anime/${id}/${ep || 1}`
     },
     {
-        name: '9Anime',
-        url: (id, ep) => `https://9anime.to/embed?id=${id}${ep ? '&ep=' + ep : ''}`
+        name: 'Embed.su',
+        url: (id, ep) => `https://embed.su/embed/anime/${id}/${ep || 1}`
     }
 ];
 
@@ -302,11 +302,19 @@ async function searchAniListAnime(query, page = 1) {
     }
 }
 
-// Open anime streaming modal with Miruro servers
+// Anime episode tracking
+let currentAnimeEpisode = 1;
+let currentAnimeTotalEpisodes = 1;
+let currentAnimeLang = 'sub';
+
+// Open anime streaming modal with real embed servers
 function openAnimeStream(item) {
     addToHistory(item);
     currentStreamItem = item;
     currentServerIndex = 0;
+    currentAnimeEpisode = 1;
+    currentAnimeTotalEpisodes = item.episodes || 12;
+    currentAnimeLang = 'sub';
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
     title.textContent = item.title || 'Anime';
@@ -316,9 +324,47 @@ function openAnimeStream(item) {
     // Hide movie/TV server tabs, show anime server tabs
     document.querySelector('.server-tabs').style.display = 'none';
     document.getElementById('animeServerTabs').style.display = 'flex';
-    document.getElementById('seasonSelectContainer').style.display = 'none';
 
-    LoadAnimeServer(0);
+    // Show episode selector for anime
+    const seasonContainer = document.getElementById('seasonSelectContainer');
+    seasonContainer.style.display = 'flex';
+    const seasonLabel = seasonContainer.querySelector('label[for="seasonSelect"]');
+    const seasonSelect = document.getElementById('seasonSelect');
+    const episodeLabel = seasonContainer.querySelector('label[for="episodeSelect"]');
+    const episodeSelect = document.getElementById('episodeSelect');
+    if (seasonLabel) seasonLabel.textContent = 'Audio:';
+    if (episodeLabel) episodeLabel.textContent = 'Episode:';
+
+    // Language selector
+    seasonSelect.innerHTML = '';
+    ['sub', 'dub'].forEach(lang => {
+        const opt = document.createElement('option');
+        opt.value = lang;
+        opt.textContent = lang === 'sub' ? 'Subtitled' : 'Dubbed';
+        seasonSelect.appendChild(opt);
+    });
+    seasonSelect.value = 'sub';
+    seasonSelect.onchange = (e) => {
+        currentAnimeLang = e.target.value;
+        loadAnimeServer(currentServerIndex);
+    };
+
+    // Episode selector
+    episodeSelect.innerHTML = '';
+    const totalEps = Math.min(currentAnimeTotalEpisodes || 12, 50);
+    for (let i = 1; i <= totalEps; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Episode ${i}`;
+        episodeSelect.appendChild(opt);
+    }
+    episodeSelect.value = 1;
+    episodeSelect.onchange = (e) => {
+        currentAnimeEpisode = parseInt(e.target.value);
+        loadAnimeServer(currentServerIndex);
+    };
+
+    loadAnimeServer(0);
     loadTrailer(item);
 }
 
@@ -329,7 +375,7 @@ function loadAnimeServer(index) {
     if (!animeId) return;
 
     const server = ANIME_SERVERS[index];
-    frame.src = server.url(animeId);
+    frame.src = server.url(animeId, currentAnimeEpisode, currentAnimeLang);
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
 
