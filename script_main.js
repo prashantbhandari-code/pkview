@@ -193,6 +193,7 @@ function buildSearchUrl(mediaType, query, extraParams) {
 const API_url = buildDiscoverUrl('movie', {});
 const TV_url = tmdbUrl('tv/popular', { 'vote_count.gte': 100 });
 const BOLLYWOOD_url = buildDiscoverUrl('movie', { with_original_language: 'hi', sort_by: 'primary_release_date.desc', 'vote_count.gte': 50 });
+const SOUTH_HINDI_url = tmdbUrl('discover/movie', { with_original_language: 'hi', with_keywords: '211511,888', sort_by: 'popularity.desc', 'vote_count.gte': 20 });
 const ANIME_url = buildDiscoverUrl('tv', { with_genres: 16, with_original_language: 'ja', 'vote_count.gte': 50 });
 const SPORTS_TV_url = buildDiscoverUrl('tv', { with_genres: 10769, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const SPORTS_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 28, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
@@ -497,6 +498,94 @@ async function loadHindiKDramas() {
         }
     } catch (err) {
         LoadMovieOrTv('tv', KOREAN_TV_url);
+    }
+}
+
+// --- South Indian Movies (Hindi Dubbed) ---
+async function LoadSouthHindiMovies() {
+    // Multiple search strategies for South Hindi movies
+    const strategies = [
+        // Strategy 1: Search for South Hindi movies
+        tmdbUrl('discover/movie', { 
+            with_original_language: 'hi', 
+            with_keywords: '211511', // Indian keyword
+            sort_by: 'popularity.desc', 
+            'vote_count.gte': 10,
+            'with_genres': '28,12,16' // Action, Adventure, Animation
+        }),
+        // Strategy 2: Search for Telugu Hindi dubbed
+        tmdbUrl('search/movie', { 
+            query: 'telugu hindi dubbed movie',
+            sort_by: 'popularity.desc'
+        }),
+        // Strategy 3: Search for Tamil Hindi dubbed
+        tmdbUrl('search/movie', { 
+            query: 'tamil hindi dubbed movie',
+            sort_by: 'popularity.desc'
+        }),
+        // Strategy 4: Search for Kannada Hindi dubbed
+        tmdbUrl('search/movie', { 
+            query: 'kannada hindi dubbed movie',
+            sort_by: 'popularity.desc'
+        }),
+        // Strategy 5: Search for Malayalam Hindi dubbed
+        tmdbUrl('search/movie', { 
+            query: 'malayalam hindi dubbed movie',
+            sort_by: 'popularity.desc'
+        }),
+        // Strategy 6: General South Indian Hindi
+        tmdbUrl('search/movie', { 
+            query: 'south indian movie hindi',
+            sort_by: 'popularity.desc'
+        })
+    ];
+
+    let allResults = [];
+    
+    for (const url of strategies) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) continue;
+            const data = await res.json();
+            if (data.results && data.results.length > 0) {
+                // Filter for movies only (not TV shows)
+                const movies = data.results.filter(item => 
+                    item.media_type === 'movie' || !item.media_type
+                );
+                allResults = allResults.concat(movies);
+            }
+        } catch (err) {
+            continue;
+        }
+    }
+
+    // Remove duplicates by ID
+    const uniqueMovies = [];
+    const seenIds = new Set();
+    for (const movie of allResults) {
+        if (!seenIds.has(movie.id)) {
+            seenIds.add(movie.id);
+            uniqueMovies.push(movie);
+        }
+    }
+
+    // Sort by popularity
+    uniqueMovies.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    if (uniqueMovies.length > 0) {
+        // Set pagination state
+        lastUrl = SOUTH_HINDI_url;
+        currentPage = 1;
+        nextPage = 2;
+        prevPage = 1;
+        totalPages = Math.ceil(uniqueMovies.length / 20);
+        if (window.currentBtn) window.currentBtn.innerText = '1';
+        if (window.prevBtn) window.prevBtn.classList.add('disabled');
+        if (window.nextBtn) window.nextBtn.classList.remove('disabled');
+        showMovies(uniqueMovies.slice(0, 20));
+    } else {
+        // Fallback to Bollywood
+        LoadMovieOrTv('movie', BOLLYWOOD_url);
     }
 }
 
@@ -1002,6 +1091,9 @@ function switchSection(section) {
     } else if (section === 'bollywood') {
         currentSection = 'bollywood';
         LoadMovieOrTv('movie', BOLLYWOOD_url);
+    } else if (section === 'south') {
+        currentSection = 'south';
+        LoadSouthHindiMovies();
     } else if (section === 'nepali') {
         currentSection = 'nepali';
         loadNepaliFeatured();
