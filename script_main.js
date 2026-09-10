@@ -372,7 +372,7 @@ async function searchAniListAnime(query, page = 1) {
 // Anime episode tracking
 let currentAnimeEpisode = 1;
 let currentAnimeTotalEpisodes = 1;
-let currentAnimeLang = 'sub';
+let currentAnimeLang = 'dub';
 
 // Open anime streaming modal with real embed servers
 function openAnimeStream(item) {
@@ -381,7 +381,7 @@ function openAnimeStream(item) {
     currentServerIndex = 0;
     currentAnimeEpisode = 1;
     currentAnimeTotalEpisodes = item.episodes || 12;
-    currentAnimeLang = 'sub';
+    currentAnimeLang = 'dub';
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
     title.textContent = item.title || 'Anime';
@@ -407,10 +407,10 @@ function openAnimeStream(item) {
     ['sub', 'dub'].forEach(lang => {
         const opt = document.createElement('option');
         opt.value = lang;
-        opt.textContent = lang === 'sub' ? 'Subtitled' : 'Dubbed';
+        opt.textContent = lang === 'sub' ? 'Subtitled' : 'Hindi Dubbed';
         seasonSelect.appendChild(opt);
     });
-    seasonSelect.value = 'sub';
+    seasonSelect.value = 'dub';
     seasonSelect.onchange = (e) => {
         currentAnimeLang = e.target.value;
         loadAnimeServer(currentServerIndex);
@@ -1659,12 +1659,8 @@ function openStream(item, mediaType) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Default to Hindi for Korean content
-    if (currentSection === 'korean' || (item.original_language === 'ko')) {
-        langSelect.value = 'hi';
-    } else {
-        langSelect.value = 'en';
-    }
+    // Default to Hindi for all sections
+    langSelect.value = 'hi';
 
     // Handle TV show season/episode selection
     if (item.media_type === 'tv') {
