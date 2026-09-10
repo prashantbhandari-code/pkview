@@ -209,16 +209,17 @@ const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'po
 // --- Miruro & Anime Streaming Servers ---
 const ANIME_SERVERS = [
     {
-        name: 'Megavid',
-        url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
-    },
-    {
         name: 'MegaPlay',
         url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        name: 'VidPlus',
-        url: (id, ep, lang) => `https://player.vidplus.to/embed/anime/${id}/${ep || 1}?dub=${lang === 'dub'}`
+        name: 'Megavid',
+        url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
+    },
+    {
+        name: 'HiAnime',
+        url: (id, ep) => `https://hianime.to/anime/${id}${ep ? '?ep=' + ep : ''}`,
+        external: true
     },
     {
         name: 'Miruro',
@@ -453,6 +454,21 @@ function loadAnimeServer(index) {
     frame.src = server.url(animeId, currentAnimeEpisode, currentAnimeLang);
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
+
+    // Detect failed embed after a delay
+    clearTimeout(window._animeLoadTimeout);
+    window._animeLoadTimeout = setTimeout(() => {
+        try {
+            // If iframe is still blank/errored, show error
+            const doc = frame.contentDocument || frame.contentWindow?.document;
+            if (doc && (!doc.body || doc.body.innerHTML.length < 10)) {
+                document.getElementById('serverError').style.display = 'flex';
+                frame.style.display = 'none';
+            }
+        } catch(e) {
+            // Cross-origin — can't check, assume OK
+        }
+    }, 5000);
 
     document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
         tab.classList.toggle('active', i === index);
