@@ -1,4 +1,6 @@
-const PROXY_BASE = '/api/tmdb';
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const TMDB_API_KEY = '4b153b123319df27bb67fcbfe219537d';
+const PROXY_BASE = TMDB_BASE;
 const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
 const NEPALI_FEATURED_ID = 1423966;
@@ -176,8 +178,9 @@ function hideSpinner() {
 
 // --- Build proxied TMDB URLs ---
 function tmdbUrl(endpoint, params = {}) {
-    const qs = new URLSearchParams(params).toString();
-    return `${PROXY_BASE}/${endpoint}${qs ? '?' + qs : ''}`;
+    const allParams = { api_key: TMDB_API_KEY, ...params };
+    const qs = new URLSearchParams(allParams).toString();
+    return `${PROXY_BASE}/${endpoint}?${qs}`;
 }
 
 function buildDiscoverUrl(mediaType, extraParams) {
