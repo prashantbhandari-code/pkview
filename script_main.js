@@ -1,5 +1,6 @@
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_API_KEY = '4b153b123319df27bb67fcbfe219537d';
+const DEFAULT_LANG = 'hi';
 const PROXY_BASE = TMDB_BASE;
 const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
@@ -178,7 +179,7 @@ function hideSpinner() {
 
 // --- Build proxied TMDB URLs ---
 function tmdbUrl(endpoint, params = {}) {
-    const allParams = { api_key: TMDB_API_KEY, ...params };
+    const allParams = { api_key: TMDB_API_KEY, language: DEFAULT_LANG, ...params };
     const qs = new URLSearchParams(allParams).toString();
     return `${PROXY_BASE}/${endpoint}?${qs}`;
 }
