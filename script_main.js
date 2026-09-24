@@ -213,7 +213,7 @@ function buildSearchUrl(mediaType, query, extraParams) {
 const API_url = buildDiscoverUrl('movie', {});
 const TV_url = tmdbUrl('tv/popular', { 'vote_count.gte': 100 });
 const BOLLYWOOD_url = buildDiscoverUrl('movie', { with_original_language: 'hi', sort_by: 'primary_release_date.desc', 'vote_count.gte': 50 });
-const SOUTH_HINDI_url = tmdbUrl('discover/movie', { with_original_language: 'hi', with_keywords: '211511,888', sort_by: 'popularity.desc', 'vote_count.gte': 20 });
+const SOUTH_HINDI_url = tmdbUrl('discover/movie', { with_original_language: 'te', sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const ANIME_url = buildDiscoverUrl('tv', { with_genres: 16, with_original_language: 'ja', 'vote_count.gte': 50 });
 const SPORTS_TV_url = buildDiscoverUrl('tv', { with_genres: 10769, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const SPORTS_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 28, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
@@ -539,59 +539,43 @@ async function loadHindiKDramas() {
 
 // --- South Indian Movies (Hindi Dubbed) ---
 async function LoadSouthHindiMovies() {
-    // Multiple search strategies for South Hindi movies
+    // TMDB with_original_language does not accept comma lists — fetch each language
+    const languages = ['te', 'ta', 'kn', 'ml'];
+    const searchQueries = [
+        'telugu dubbed hindi',
+        'tamil dubbed hindi',
+        'south indian hindi',
+        'baahubali hindi',
+        'kgf hindi'
+    ];
+
     const strategies = [
-        // Strategy 1: Search for South Hindi movies
-        tmdbUrl('discover/movie', { 
-            with_original_language: 'hi', 
-            with_keywords: '211511', // Indian keyword
-            sort_by: 'popularity.desc', 
-            'vote_count.gte': 10,
-            'with_genres': '28,12,16' // Action, Adventure, Animation
-        }),
-        // Strategy 2: Search for Telugu Hindi dubbed
-        tmdbUrl('search/movie', { 
-            query: 'telugu hindi dubbed movie',
-            sort_by: 'popularity.desc'
-        }),
-        // Strategy 3: Search for Tamil Hindi dubbed
-        tmdbUrl('search/movie', { 
-            query: 'tamil hindi dubbed movie',
-            sort_by: 'popularity.desc'
-        }),
-        // Strategy 4: Search for Kannada Hindi dubbed
-        tmdbUrl('search/movie', { 
-            query: 'kannada hindi dubbed movie',
-            sort_by: 'popularity.desc'
-        }),
-        // Strategy 5: Search for Malayalam Hindi dubbed
-        tmdbUrl('search/movie', { 
-            query: 'malayalam hindi dubbed movie',
-            sort_by: 'popularity.desc'
-        }),
-        // Strategy 6: General South Indian Hindi
-        tmdbUrl('search/movie', { 
-            query: 'south indian movie hindi',
-            sort_by: 'popularity.desc'
-        })
+        ...languages.map(lang =>
+            tmdbUrl('discover/movie', {
+                with_original_language: lang,
+                sort_by: 'popularity.desc',
+                'vote_count.gte': 30
+            })
+        ),
+        ...searchQueries.map(query =>
+            tmdbUrl('search/movie', { query })
+        )
     ];
 
     let allResults = [];
-    
-    for (const url of strategies) {
-        try {
-            const res = await fetch(url);
-            if (!res.ok) continue;
-            const data = await res.json();
-            if (data.results && data.results.length > 0) {
-                // Filter for movies only (not TV shows)
-                const movies = data.results.filter(item => 
-                    item.media_type === 'movie' || !item.media_type
-                );
-                allResults = allResults.concat(movies);
-            }
-        } catch (err) {
-            continue;
+
+    const fetches = await Promise.allSettled(
+        strategies.map(url => fetch(url).then(res => (res.ok ? res.json() : null)))
+    );
+
+    for (const outcome of fetches) {
+        if (outcome.status !== 'fulfilled' || !outcome.value) continue;
+        const data = outcome.value;
+        if (data.results && data.results.length > 0) {
+            const movies = data.results.filter(item =>
+                item.media_type === 'movie' || !item.media_type
+            );
+            allResults = allResults.concat(movies);
         }
     }
 
@@ -599,29 +583,28 @@ async function LoadSouthHindiMovies() {
     const uniqueMovies = [];
     const seenIds = new Set();
     for (const movie of allResults) {
-        if (!seenIds.has(movie.id)) {
+        if (movie.id && !seenIds.has(movie.id)) {
             seenIds.add(movie.id);
             uniqueMovies.push(movie);
         }
     }
 
-    // Sort by popularity
+    // Boost titles that mention Hindi (dubbed), keep popularity within groups
     uniqueMovies.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    const finalList = preferHindiDubbed(uniqueMovies);
 
-    if (uniqueMovies.length > 0) {
-        // Set pagination state
+    if (finalList.length > 0) {
         lastUrl = SOUTH_HINDI_url;
         currentPage = 1;
         nextPage = 2;
         prevPage = 1;
-        totalPages = Math.ceil(uniqueMovies.length / 20);
+        totalPages = Math.ceil(finalList.length / 20);
         if (window.currentBtn) window.currentBtn.innerText = '1';
         if (window.prevBtn) window.prevBtn.classList.add('disabled');
         if (window.nextBtn) window.nextBtn.classList.remove('disabled');
-        showMovies(uniqueMovies.slice(0, 20));
+        showMovies(finalList.slice(0, 20));
     } else {
-        // Fallback to Bollywood
-        LoadMovieOrTv('movie', BOLLYWOOD_url);
+        LoadMovieOrTv('movie', SOUTH_HINDI_url);
     }
 }
 
@@ -1451,6 +1434,8 @@ function searchResultsAndDisplayWrapper(ev) {
     if (!searchQuery) {
         if (currentSection === 'bollywood') {
             LoadMovieOrTv('movie', BOLLYWOOD_url);
+        } else if (currentSection === 'south') {
+            LoadSouthHindiMovies();
         } else if (currentSection === 'nepali') {
             LoadMovieOrTv('movie', NEPALI_url);
         } else if (currentSection === 'anime') {
@@ -1471,6 +1456,7 @@ function searchResultsAndDisplayWrapper(ev) {
     } else {
         const langMap = {
             bollywood: 'movie',
+            south: 'movie',
             nepali: 'movie',
             anime: 'tv',
             korean: 'tv',
@@ -1480,6 +1466,7 @@ function searchResultsAndDisplayWrapper(ev) {
         };
         const langCodeMap = {
             bollywood: 'hi',
+            south: 'te',
             nepali: 'ne',
             anime: 'ja',
             korean: 'ko',
