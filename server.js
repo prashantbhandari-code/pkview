@@ -16,6 +16,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 app.use(express.static(path.join(__dirname)));
 
 // --- TMDB API Proxy (hides API key from client) ---

@@ -1,9 +1,9 @@
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_API_KEY = '4b153b123319df27bb67fcbfe219537d';
-const DEFAULT_LANG = 'hi';
 const PROXY_BASE = TMDB_BASE;
 const IMG_url = 'https://image.tmdb.org/t/p/w500';
 const SPORTS_API = 'https://api.embedsportex.fun/api';
+const LIVE_SPORTS_ENABLED = false; // domain dead; flip true when a replacement feed exists
 const NEPALI_FEATURED_ID = 1423966;
 const ANILIST_API = 'https://graphql.anilist.co';
 
@@ -142,7 +142,7 @@ function getSequel(a){if(!a.relations?.edges)return null;for(const e of a.relati
 function getStudio(a){if(!a.studios?.nodes)return '';const m=a.studios.nodes.find(s=>s.isAnimationStudio);return m?m.name:(a.studios.nodes[0]?.name||'');}
 
 let _heroInterval=null,_heroIdx=0;
-function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
+function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length||currentSection!=='anime'){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
 function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h2 class="anime-hero-title">'+escapeHtml(t)+'</h2><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
 }
 function openAnimeStreamFromHero(i){const a=window._animeHeroData?.[i];if(!a)return;openAnimeStream({id:a.id,title:a.title?.english||a.title?.romaji||a.title?.native||'Untitled',anilist_id:a.id,episodes:a.episodes,media_type:'anime'});}
@@ -179,9 +179,25 @@ function hideSpinner() {
 
 // --- Build proxied TMDB URLs ---
 function tmdbUrl(endpoint, params = {}) {
-    const allParams = { api_key: TMDB_API_KEY, language: DEFAULT_LANG, ...params };
+    const allParams = { api_key: TMDB_API_KEY, ...params };
     const qs = new URLSearchParams(allParams).toString();
     return `${PROXY_BASE}/${endpoint}?${qs}`;
+}
+
+// Prefer Hindi dubbed titles in mixed browse/search results
+function hindiDubScore(item) {
+    const text = `${item.title || ''} ${item.name || ''} ${item.overview || ''}`;
+    let score = 0;
+    if (item.original_language === 'hi') score += 3;
+    if (/\bhindi\b/i.test(text)) score += 2;
+    return score;
+}
+
+function preferHindiDubbed(items) {
+    return items
+        .map((item, index) => ({ item, index, score: hindiDubScore(item) }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map(entry => entry.item);
 }
 
 function buildDiscoverUrl(mediaType, extraParams) {
@@ -205,7 +221,7 @@ const NEPALI_url = buildDiscoverUrl('movie', { with_original_language: 'ne', 'vo
 const KOREAN_TV_url = buildDiscoverUrl('tv', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const KOREAN_MOVIE_url = buildDiscoverUrl('movie', { with_original_language: 'ko', sort_by: 'popularity.desc', 'vote_count.gte': 100 });
 // Hindi dubbed K-dramas search URLs
-const KOREAN_HINDI_TV_url = tmdbUrl('search/tv?query=korean+drama+hindi&sort_by=popularity.desc');
+const KOREAN_HINDI_TV_url = buildSearchUrl('tv', 'korean drama hindi');
 const WEB_SERIES_url = buildDiscoverUrl('tv', { with_genres: 18, sort_by: 'popularity.desc', 'vote_count.gte': 200 });
 const DOCU_url = buildDiscoverUrl('tv', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 50 });
 const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 100 });
@@ -634,13 +650,22 @@ async function loadLiveSports() {
     const container = document.getElementById('liveSportsContainer');
     if (!container) return;
 
+    if (!LIVE_SPORTS_ENABLED) {
+        container.innerHTML = '<div class="live-sports-empty fade-in">📺 Live sports feed unavailable<br><small>Highlights and sports movies are still available below.</small></div>';
+        return;
+    }
+
     try {
-        const res = await fetch(SPORTS_API);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(SPORTS_API, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error('Sports API ' + res.status);
         const data = await res.json();
         liveSportsData = data;
         renderLiveSports(container, data);
     } catch (e) {
-        container.innerHTML = '<div class="live-sports-empty fade-in">📺 No live matches right now<br><small>Check back during major sporting events!</small></div>';
+        container.innerHTML = '<div class="live-sports-empty fade-in">📺 Live sports feed unavailable<br><small>Highlights and sports movies are still available below.</small></div>';
     }
 }
 
@@ -973,14 +998,12 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         });
     });
 
-    // Language selector
+    // Language selector — reload player with preferred audio language
     const langSelect = document.getElementById('languageSelect');
     if (langSelect) {
-        langSelect.addEventListener('change', (e) => {
-            const lang = e.target.value;
-            const frame = document.getElementById('streamFrame');
-            if (frame.src) {
-                frame.src = frame.src.split('&lang=')[0] + '&lang=' + lang;
+        langSelect.addEventListener('change', () => {
+            if (currentStreamItem && currentStreamItem.media_type !== 'anime') {
+                loadServer(currentServerIndex);
             }
         });
     }
@@ -1102,6 +1125,22 @@ function switchSection(section) {
     const nepaliFeatured = document.getElementById('nepaliFeaturedSection');
     if (nepaliFeatured) {
         nepaliFeatured.style.display = section === 'nepali' ? 'block' : 'none';
+    }
+
+    // Show/hide anime hero only in anime section
+    const animeHero = document.getElementById('animeHero');
+    if (animeHero) {
+        if (section === 'anime') {
+            if (window._animeHeroData && window._animeHeroData.length) {
+                renderAnimeHero();
+            }
+        } else {
+            animeHero.style.display = 'none';
+            if (_heroInterval) {
+                clearInterval(_heroInterval);
+                _heroInterval = null;
+            }
+        }
     }
 
     // Load appropriate content
@@ -1232,10 +1271,11 @@ async function LoadMovieOrTv(whichPage, url) {
         let data = await res.json();
 
         if (data.results && data.results.length !== 0) {
+            const results = preferHindiDubbed(data.results);
             if (whichPage == 'movie') {
-                showMovies(data.results);
+                showMovies(results);
             } else if (whichPage == 'tv') {
-                showTvShows(data.results);
+                showTvShows(results);
             }
             currentPage = data.page;
             nextPage = currentPage + 1;
@@ -1663,7 +1703,7 @@ function openStream(item, mediaType) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Default to Hindi for all sections
+    // Prefer Hindi dubbed audio by default
     langSelect.value = 'hi';
 
     // Handle TV show season/episode selection
@@ -1747,11 +1787,18 @@ function loadServer(index) {
     const errorMsg = document.getElementById('serverError');
     if (!currentStreamItem) return;
 
+    const langSelect = document.getElementById('languageSelect');
+    const audioLang = (langSelect && langSelect.value) || 'hi';
+
     let url;
     if (currentStreamItem.media_type === 'tv') {
         url = STREAMING_SERVERS[index].tv(currentStreamItem.id, currentSeason, currentEpisode);
     } else {
         url = STREAMING_SERVERS[index].movie(currentStreamItem.id);
+    }
+
+    if (url) {
+        url += (url.includes('?') ? '&' : '?') + 'lang=' + encodeURIComponent(audioLang);
     }
 
     frame.src = url;
