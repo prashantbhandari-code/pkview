@@ -133,6 +133,27 @@ async function fetchAniList(queryName, variables = {}) {
     return json.data?.Page?.results || json.data?.Page?.media || [];
 }
 
+// Fetch a single anime by AniList id (for favorites/history lookups)
+async function fetchAniListMediaById(id) {
+    const query = `query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+            id
+            title { english romaji native }
+            coverImage { large medium }
+            episodes
+            status
+        }
+    }`;
+    const res = await fetch(ANILIST_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ query, variables: { id: Number(id) } })
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data?.Media || null;
+}
+
 // --- Miruro broadcast note system ---
 function getBroadcastNote(a){const s=a.status||'',n=a.nextAiringEpisode,e=a.episodes,sd=a.startDate,ed=a.endDate;if(n&&n.timeUntilAiring>0){const d=Math.floor(n.timeUntilAiring/86400),h=Math.floor((n.timeUntilAiring%86400)/3600),m=Math.floor((n.timeUntilAiring%3600)/60);let t='';if(d>0)t+=d+'d ';if(h>0)t+=h+'h ';if(m>0&&d===0)t+=m+'m';return{text:'Ep '+n.episode+' in '+t.trim(),type:'airing',icon:'\u{1F4FA}'};}if(s==='FINISHED'){const e2=ed?ed.year+'-'+String(ed.month).padStart(2,'0')+'-'+String(ed.day).padStart(2,'0'):'';return{text:(e||'?')+' episodes'+(e2?' \u00b7 Ended '+e2:''),type:'finished',icon:'\u2705'};}if(s==='NOT_YET_RELEASED'){const d2=sd?sd.year+'-'+String(sd.month).padStart(2,'0')+'-'+String(sd.day).padStart(2,'0'):'';return{text:d2?'Starts '+d2:'Upcoming',type:'upcoming',icon:'\u{1F51C}'};}if(s==='HIATUS')return{text:'On Hiatus',type:'hiatus',icon:'\u23F8\uFE0F'};if(s==='RELEASING')return{text:'Airing \u00b7 Schedule TBA',type:'airing',icon:'\u{1F4FA}'};return{text:s,type:'unknown',icon:'\u{1F4CB}'};}
 function getFormatBadge(f){return{TV:'TV',TV_SHORT:'TV Short',MOVIE:'Movie',OVA:'OVA',ONA:'ONA',SPECIAL:'Special',MUSIC:'Music'}[f]||f||'';}
@@ -916,6 +937,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     });
 
     LoadDataAndDisplay();
+    loadHomeSpotlight();
     loadWatchHistory();
     loadFavorites();
 
@@ -1110,6 +1132,9 @@ function switchSection(section) {
         nepaliFeatured.style.display = section === 'nepali' ? 'block' : 'none';
     }
 
+    // Spotlight hero only on home
+    if (section !== 'home') hideHomeSpotlight();
+
     // Show/hide anime hero only in anime section
     const animeHero = document.getElementById('animeHero');
     if (animeHero) {
@@ -1128,6 +1153,7 @@ function switchSection(section) {
 
     // Load appropriate content
     if (section === 'home') {
+        loadHomeSpotlight();
         let whichPage = localStorage.getItem('page');
         LoadDataAndDisplay();
     } else if (section === 'bollywood') {
@@ -1297,6 +1323,21 @@ async function LoadMovieOrTv(whichPage, url) {
     }
 }
 
+// Format a rating for display: 1 decimal, or NR when unrated
+function formatRating(vote) {
+    const n = Number(vote);
+    if (!n) return { text: 'NR', cls: 'nr' };
+    return { text: n.toFixed(1), cls: getColor(n) };
+}
+
+// "2026-07-29" → "29 Jul 2026"
+function formatDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 function showMovies(data) {
     let main = document.querySelector('#main');
     main.innerHTML = '';
@@ -1312,15 +1353,16 @@ function showMovies(data) {
         const safeTitle = escapeHtml(title);
         const safeOverview = escapeHtml(overview);
         const posterSrc = poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
+        const rating = formatRating(vote_average);
 
         movieEl.innerHTML = `
         <div>
-        <span class="releaseDate">${escapeHtml(release_date)}</span>
+        <span class="releaseDate">${escapeHtml(formatDate(release_date))}</span>
         <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
         </div>
         <div class="movie-info">
         <h3>${safeTitle}</h3>
-        <span class="rating ${getColor(vote_average)}">${vote_average}</span>
+        <span class="rating ${rating.cls}">${rating.text}</span>
         <button class="favorite-btn" data-id="${id}" data-type="movie" title="Add to favorites">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
@@ -1358,15 +1400,16 @@ function showTvShows(data) {
         const safeName = escapeHtml(name);
         const safeOverview = escapeHtml(overview);
         const posterSrc = poster_path ? IMG_url + poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
+        const rating = formatRating(vote_average);
 
         tvEl.innerHTML = `
       <div>
-      <span class="releaseDate">${escapeHtml(first_air_date)}</span>
+      <span class="releaseDate">${escapeHtml(formatDate(first_air_date))}</span>
       <img src="${posterSrc}" alt="${safeName}" loading="lazy">
       </div>
       <div class="movie-info">
       <h3>${safeName}</h3>
-      <span class="rating ${getColor(vote_average)}">${vote_average}</span>
+      <span class="rating ${rating.cls}">${rating.text}</span>
       <button class="favorite-btn" data-id="${id}" data-type="tv" title="Add to favorites">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
@@ -1538,6 +1581,82 @@ async function loadNepaliFeatured() {
     }
 }
 
+// --- Home Spotlight Hero (rotating trending backdrops) ---
+let _spotTimer = null, _spotIdx = 0;
+let _spotData = [];
+
+async function loadHomeSpotlight() {
+    const el = document.getElementById('homeHero');
+    if (!el) return;
+    try {
+        if (!_spotData.length) {
+            const res = await fetch(tmdbUrl('movie/popular'));
+            const data = await res.json();
+            _spotData = (data.results || []).filter(m => m.backdrop_path).slice(0, 5);
+        }
+        if (!_spotData.length || currentSection !== 'home') return;
+        el.style.display = 'block';
+        _spotIdx = 0;
+        showSpotSlide(0);
+        clearInterval(_spotTimer);
+        _spotTimer = setInterval(() => {
+            _spotIdx = (_spotIdx + 1) % _spotData.length;
+            showSpotSlide(_spotIdx);
+        }, 7000);
+    } catch (e) {
+        // Hero is decorative — fail silently
+    }
+}
+
+function hideHomeSpotlight() {
+    const el = document.getElementById('homeHero');
+    if (el) el.style.display = 'none';
+    if (_spotTimer) {
+        clearInterval(_spotTimer);
+        _spotTimer = null;
+    }
+}
+
+function showSpotSlide(i) {
+    const el = document.getElementById('homeHero');
+    const m = _spotData[i];
+    if (!el || !m) return;
+    const title = escapeHtml(m.title || '');
+    const rating = m.vote_average ? Number(m.vote_average).toFixed(1) : 'NR';
+    const year = (m.release_date || '').slice(0, 4);
+    const gnames = (m.genre_ids || [])
+        .map(id => (genres.find(g => g.id === id) || {}).name)
+        .filter(Boolean).slice(0, 3).join(' \u00b7 ');
+    const desc = escapeHtml((m.overview || '').substring(0, 180));
+    const bg = 'https://image.tmdb.org/t/p/w1280' + m.backdrop_path;
+    const dots = _spotData.map((_, j) => '<span class="hero-dot ' + (j === i ? 'active' : '') + '" onclick="spotlightGo(' + j + ')"></span>').join('');
+    el.innerHTML = `
+        <div class="spotlight-slide" style="background-image:linear-gradient(90deg,rgba(10,14,39,0.94) 0%,rgba(10,14,39,0.6) 45%,rgba(10,14,39,0.15) 100%),url('${bg}')">
+            <div class="spotlight-content">
+                <span class="spotlight-tag">\uD83D\uDD25 Spotlight</span>
+                <h2 class="spotlight-title">${title}</h2>
+                <div class="spotlight-meta">
+                    <span class="spotlight-score">\u2605 ${rating}</span>
+                    ${year ? '<span>\u00b7 ' + year + '</span>' : ''}
+                    ${gnames ? '<span>\u00b7 ' + escapeHtml(gnames) + '</span>' : ''}
+                </div>
+                <p class="spotlight-desc">${desc}...</p>
+                <button class="spotlight-watch" onclick="spotlightWatch(${i})">\u25B6 Watch Now</button>
+            </div>
+            <div class="spotlight-dots">${dots}</div>
+        </div>`;
+}
+
+function spotlightGo(i) {
+    _spotIdx = i;
+    showSpotSlide(i);
+}
+
+function spotlightWatch(i) {
+    const m = _spotData[i];
+    if (m) openStream({ ...m, media_type: 'movie' }, 'movie');
+}
+
 // Theme toggle functionality
 function loadThemePreference() {
     const savedTheme = localStorage.getItem('pkview_theme');
@@ -1559,17 +1678,18 @@ function setupHeaderControls() {
 
 // Watch History functionality
 async function addToHistory(item) {
-    const whichPage = localStorage.getItem('page');
+    // Use the item's real media type (anime/movie/tv) — not the movie/TV page switch
+    const mediaType = item.media_type || (localStorage.getItem('page') === 'movie' ? 'movie' : 'tv');
     const historyItem = {
         id: item.id,
         title: item.title || item.name,
         poster: item.poster_path,
-        type: whichPage === 'movie' ? 'movie' : 'tv',
+        type: mediaType,
         timestamp: Date.now()
     };
 
     // Remove existing entry if present
-    watchHistory = watchHistory.filter(h => h.id !== item.id || h.type !== whichPage);
+    watchHistory = watchHistory.filter(h => h.id !== item.id || h.type !== mediaType);
     watchHistory.unshift(historyItem);
     watchHistory = watchHistory.slice(0, 10); // Keep last 10
     localStorage.setItem('pkview_history', JSON.stringify(watchHistory));
@@ -1593,14 +1713,21 @@ function loadWatchHistory() {
         if (index < 6) div.classList.add('stagger-' + (index + 1));
         div.dataset.item = JSON.stringify({...item, media_type: item.type});
         const safeTitle = escapeHtml(item.title || '');
-        const posterSrc = item.poster ? IMG_url + item.poster : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
+        // AniList covers are absolute URLs; TMDB posters are relative paths
+        const posterSrc = !item.poster ? 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'
+            : /^https?:\/\//.test(item.poster) ? item.poster
+            : IMG_url + item.poster;
         div.innerHTML = `
             <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
             <div class="movie-info"><h3>${safeTitle}</h3></div>
         `;
         div.addEventListener('click', () => {
             const data = JSON.parse(div.dataset.item);
-            openStream(data);
+            if (data.media_type === 'anime') {
+                openAnimeStream({ ...data, anilist_id: data.id });
+            } else {
+                openStream(data);
+            }
         });
         grid.appendChild(div);
     });
@@ -1648,6 +1775,32 @@ function loadFavorites() {
     grid.innerHTML = '';
 
     favorites.forEach(item => {
+        // Anime favorites live on AniList — TMDB ids don't match
+        if (item.type === 'anime') {
+            fetchAniListMediaById(item.id)
+                .then(a => {
+                    if (!a) return;
+                    const div = document.createElement('div');
+                    div.classList.add('movie', 'fade-in-up');
+                    const title = a.title?.english || a.title?.romaji || a.title?.native || 'Untitled';
+                    const cover = a.coverImage?.large || a.coverImage?.medium || '';
+                    div.dataset.item = JSON.stringify({
+                        id: a.id, anilist_id: a.id, title, poster_path: cover,
+                        episodes: a.episodes, media_type: 'anime'
+                    });
+                    const displayName = escapeHtml(title);
+                    div.innerHTML = `
+                        <img src="${cover}" alt="${displayName}" loading="lazy">
+                        <div class="movie-info"><h3>${displayName}</h3></div>
+                    `;
+                    div.addEventListener('click', () => openAnimeStream(JSON.parse(div.dataset.item)));
+                    grid.appendChild(div);
+                    updateFavoriteButtons();
+                })
+                .catch(err => console.error('Error loading anime favorite:', err));
+            return;
+        }
+
         const whichPage = item.type === 'movie' ? 'movie' : 'tv';
         const endpoint = whichPage === 'movie' ? 'movie/' + item.id : 'tv/' + item.id;
         const url = tmdbUrl(endpoint);
