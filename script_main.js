@@ -881,13 +881,15 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
 
+    // Genre hub horizontal scroller (only on home section)
+    const hubRow = document.querySelector('.hub-row');
+    const hubScroll = document.getElementById('hubScroll');
+
     rightArrow.addEventListener("click", () => {
-        document.querySelector('.hub-row').scrollLeft += 500;
-        manageIcons();
+        if (hubScroll) hubScroll.scrollLeft += 500;
     });
     leftArrow.addEventListener("click", () => {
-        document.querySelector('.hub-row').scrollLeft -= 500;
-        manageIcons();
+        if (hubScroll) hubScroll.scrollLeft -= 500;
     });
 
     let onPage = null;
@@ -1166,7 +1168,7 @@ const manageIcons = () => {
     const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
     const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
 
-    if (row) {
+    if (row && leftArrowContainer) {
         if (row.scrollLeft >= 20) {
             leftArrowContainer.classList.add("active");
         } else {
