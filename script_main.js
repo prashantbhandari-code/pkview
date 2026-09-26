@@ -1083,6 +1083,15 @@ function setupNavigation() {
         });
     });
 
+    // Footer quick links share the nav switching
+    document.querySelectorAll('.footer-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchSection(link.dataset.section);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
     // Sports channel click handlers
     document.querySelectorAll('.sports-channel-card').forEach(card => {
         card.addEventListener('click', (e) => {
@@ -1362,12 +1371,14 @@ function showMovies(data) {
         </div>
         <div class="movie-info">
         <h3>${safeTitle}</h3>
+        <div class="movie-info-meta">
         <span class="rating ${rating.cls}">${rating.text}</span>
         <button class="favorite-btn" data-id="${id}" data-type="movie" title="Add to favorites">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
             </svg>
         </button>
+        </div>
         </div>
         <div class="overview">
         <span>
@@ -1409,12 +1420,14 @@ function showTvShows(data) {
       </div>
       <div class="movie-info">
       <h3>${safeName}</h3>
+      <div class="movie-info-meta">
       <span class="rating ${rating.cls}">${rating.text}</span>
       <button class="favorite-btn" data-id="${id}" data-type="tv" title="Add to favorites">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M20.84 4.61a4.97 4.97 0 0 0-7.14 0L12 6.01 9.3 3.3a4.97 4.97 0 0 0-7.14 0C.29 6.45 0 8.9 0 11.35c0 3.63 3.28 6.32 8.17 10.87L12 22.3l3.83-3.41c4.89-4.55 8.14-7.24 8.14-10.87 0-2.45-.29-4.9-1.93-6.54z"></path>
           </svg>
       </button>
+      </div>
       </div>
       <div class="overview">
     <h3>${safeName}</h3>
