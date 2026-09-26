@@ -882,7 +882,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
 
-    if (hubScroll) {
+    if (hubScroll && rightArrow && leftArrow) {
         rightArrow.addEventListener("click", () => {
             hubScroll.scrollLeft += 500;
         });
@@ -901,7 +901,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     }
 
     let pgChange = document.querySelector('.pageChange');
-    pgChange.addEventListener('click', () => {
+    if (pgChange) pgChange.addEventListener('click', () => {
         let whichPage = localStorage.getItem('page');
         if (whichPage == 'movie') {
             localStorage.setItem('page', 'tv');
@@ -945,14 +945,14 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     const current = window.currentBtn;
     const next = window.nextBtn;
 
-    prev.addEventListener('click', () => {
+    if (prev) prev.addEventListener('click', () => {
         if (prevPage > 0) {
             pageCall(prevPage);
             main.scrollIntoView({ behavior: 'smooth' });
         }
     });
 
-    next.addEventListener('click', () => {
+    if (next) next.addEventListener('click', () => {
         if (nextPage <= totalPages) {
             pageCall(nextPage);
             main.scrollIntoView({ behavior: 'smooth' });
@@ -971,7 +971,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     let copyRightYear = document.getElementById("copyright-year");
     let currentDate = new Date();
     let currentYear = currentDate.getFullYear();
-    copyRightYear.innerText = currentYear;
+    if (copyRightYear) copyRightYear.innerText = currentYear;
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
@@ -1072,6 +1072,7 @@ function switchSection(section) {
     currentSection = section;
     selectedGenre = [];
     currentPage = 1;
+    highlightSelection();
 
     // Section transition animation
     const main = document.querySelector('#main');
@@ -1091,6 +1092,12 @@ function switchSection(section) {
     const genreStrip = document.querySelector('.hub-section.primary');
     if (genreStrip) {
         genreStrip.style.display = section === 'home' ? 'flex' : 'none';
+    }
+
+    // Anime sort bar & community belong to the anime section only (redesign dropped this)
+    if (section !== 'anime') {
+        hideAnimeSortBar();
+        hideAnimeCommunity();
     }
 
     // Show/hide sports channels
@@ -1166,6 +1173,7 @@ const manageIcons = () => {
     const row = document.querySelector('.hub-row');
     const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
     const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
+    if (!tagsEl || !leftArrowContainer || !rightArrowContainer) return;
 
     if (row && leftArrowContainer) {
         if (row.scrollLeft >= 20) {
@@ -1184,9 +1192,19 @@ const manageIcons = () => {
 }
 
 function setGenreFromStrip(genreId) {
+    // Anime renders from AniList — lastUrl is stale there, so genre filters don't apply
+    if (!lastUrl || currentSection === 'anime') return;
     const url = new URL(lastUrl, window.location.origin);
     url.searchParams.delete('with_genres');
-    const whichPage = localStorage.getItem('page');
+    url.searchParams.delete('page');
+    if (genreId && Number(genreId) !== selectedGenre[0]) {
+        selectedGenre = [Number(genreId)];
+        url.searchParams.set('with_genres', genreId);
+    } else {
+        // Clicking the active genre again (or reset) clears the filter
+        selectedGenre = [];
+    }
+    const whichPage = url.pathname.includes('/tv') ? 'tv' : 'movie';
     LoadMovieOrTv(whichPage, url.href);
     highlightSelection();
 }
@@ -1203,8 +1221,9 @@ function highlightSelection() {
     });
     if (selectedGenre.length != 0) {
         selectedGenre.forEach(id => {
-            const highlightedTag = document.getElementById(id);
-            highlightedTag.classList.add('active');
+            document.querySelectorAll('.hub-btn[data-genre="' + id + '"]').forEach(el => {
+                el.classList.add('active');
+            });
         });
     }
 }
@@ -1711,6 +1730,7 @@ async function addToHistory(item) {
 function loadWatchHistory() {
     const section = document.getElementById('watchHistorySection');
     const grid = document.getElementById('watchHistoryGrid');
+    if (!section || !grid) return;
 
     if (!watchHistory.length) {
         section.style.display = 'none';
@@ -1777,6 +1797,7 @@ function loadFavorites() {
     const section = document.getElementById('favoritesSection');
     const grid = document.getElementById('favoritesGrid');
     const clearBtn = document.getElementById('clearFavorites');
+    if (!section || !grid) return;
 
     if (!favorites.length) {
         section.style.display = 'none';
@@ -1784,7 +1805,7 @@ function loadFavorites() {
     }
 
     section.style.display = 'block';
-    clearBtn.style.display = 'inline-block';
+    if (clearBtn) clearBtn.style.display = 'inline-block';
     grid.innerHTML = '';
 
     favorites.forEach(item => {
@@ -2032,6 +2053,7 @@ function closeStream() {
     const seasonContainer = document.getElementById('seasonSelectContainer');
     const movieTabs = document.querySelector('.server-tabs');
     const animeTabs = document.getElementById('animeServerTabs');
+    if (!modal) return;
 
     modal.classList.remove('active');
     streamFrame.src = '';
@@ -2050,6 +2072,7 @@ function closeStream() {
 // Close season modal
 function closeSeasonModal() {
     const modal = document.getElementById('seasonModal');
+    if (!modal) return;
     modal.classList.remove('active');
     document.body.style.overflow = '';
 }
@@ -2058,6 +2081,7 @@ function closeSeasonModal() {
 function clearFavorites() {
     favorites = [];
     localStorage.removeItem('pkview_favorites');
-    document.getElementById('favoritesSection').style.display = 'none';
+    const favSection = document.getElementById('favoritesSection');
+    if (favSection) favSection.style.display = 'none';
     updateFavoriteButtons();
 }

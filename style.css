@@ -108,6 +108,18 @@ body::-webkit-scrollbar-track {
   gap: 0.6rem;
 }
 
+.pageChange {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.pageChange .switch {
+  width: 42px;
+  height: 42px;
+}
+
 .theme-toggle {
   display: flex;
   align-items: center;
@@ -713,7 +725,7 @@ body.light-theme .movie-info span.nr {
   background: rgba(233, 69, 96, 0.25);
   border-color: rgba(233, 69, 96, 0.35);
   transform: translateY(-3px);
-}  color: grey;
+  color: grey;
 }
 
 .knowmore {
@@ -3218,6 +3230,18 @@ body.light-theme .error-state {
   align-items: center;
   overflow: hidden;
   margin-top: 0;
+}
+
+/* Markup uses id="hero" (the .hero class rule above never matches it) */
+#hero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative layers must never intercept clicks meant for the nav/hub strips */
+.hero-bg,
+.hero-overlay {
+  pointer-events: none;
 }
 
 .hero-bg {
