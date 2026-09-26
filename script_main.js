@@ -856,10 +856,27 @@ let totalPages = 100;
 window.addEventListener("DOMContentLoaded", (ev) => {
     let main = document.querySelector('#main');
 
-    setGenres();
     loadThemePreference();
     setupHeaderControls();
     setupNavigation();
+
+    // Genre hub delegation (setGenre('X') onclicks were removed; buttons use data-genre)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.hub-btn');
+        if (btn) {
+            const genreId = btn.getAttribute('data-genre');
+            if (genreId) setGenreFromStrip(genreId);
+        }
+    });
+
+    // Filter reset button in the hero
+    const filterReset = document.getElementById('filterReset');
+    if (filterReset) {
+        filterReset.addEventListener('click', () => {
+            selectedGenre = [];
+            setGenreFromStrip(null);
+        });
+    }
 
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
@@ -1022,35 +1039,7 @@ function topFunction() {
     document.documentElement.scrollTop = 0;
 }
 
-function setGenres() {
-    let tags_el = document.querySelector('#tags');
-    genres.forEach(genre => {
-        const t = document.createElement('div');
-        t.classList.add('tag');
-        t.id = genre.id;
-        t.innerText = genre.name;
-        t.addEventListener('click', () => {
-            if (selectedGenre.length == 0) {
-                selectedGenre.push(genre.id);
-            } else {
-                if (selectedGenre.includes(genre.id)) {
-                    selectedGenre.forEach((id, idx) => {
-                        if (id == genre.id) {
-                            selectedGenre.splice(idx, 1);
-                        }
-                    });
-                } else {
-                    selectedGenre.push(genre.id);
-                }
-            }
-            let newurl = API_url + '&with_genres=' + encodeURI(selectedGenre.join(','));
-            let whichPage = localStorage.getItem('page');
-            LoadMovieOrTv(whichPage, newurl);
-            highlightSelection();
-        });
-        tags_el.append(t);
-    });
-}
+
 
 function setupNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
@@ -1098,14 +1087,10 @@ function switchSection(section) {
         }
     });
 
-    // Show/hide genre tags based on section
-    const genreSection = document.querySelector('.scrollable-tabs-container');
-    if (section === 'home') {
-        genreSection.style.display = 'flex';
-    } else {
-        genreSection.style.display = 'none';
-        hideAnimeSortBar();
-        hideAnimeCommunity();
+    // Genre tag strip is now in the hub section; hidden on all sections except home
+    const genreStrip = document.querySelector('.hub-section.primary');
+    if (genreStrip) {
+        genreStrip.style.display = section === 'home' ? 'flex' : 'none';
     }
 
     // Show/hide sports channels
@@ -1196,8 +1181,21 @@ const manageIcons = () => {
     }
 }
 
+function setGenreFromStrip(genreId) {
+    const url = new URL(lastUrl, window.location.origin);
+    url.searchParams.delete('with_genres');
+    const whichPage = localStorage.getItem('page');
+    LoadMovieOrTv(whichPage, url.href);
+    highlightSelection();
+}
+
+function setGenre(section) {
+    if (currentSection !== 'home') return;
+    setGenreFromStrip(section);
+}
+
 function highlightSelection() {
-    const tags = document.querySelectorAll('.tag');
+    const tags = document.querySelectorAll('.hub-btn');
     tags.forEach(tag => {
         tag.classList.remove('active');
     });
