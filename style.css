@@ -1327,6 +1327,28 @@ hr {
   transform: translateY(0) scale(0.99);
 }
 
+/* Download variant — calm outline style so Trailer stays primary */
+.trailer-btn.download-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 19, 97, 0.4);
+  box-shadow: none;
+}
+
+.trailer-btn.download-btn:hover {
+  background: rgba(255, 19, 97, 0.14);
+  box-shadow: 0 6px 18px rgba(255, 19, 97, 0.25);
+}
+
+body.light-theme .trailer-btn.download-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(225, 29, 72, 0.45);
+  color: #c11d43;
+}
+
+body.light-theme .trailer-btn.download-btn:hover {
+  background: rgba(225, 29, 72, 0.1);
+}
+
 .trailer-player {
   position: relative;
   width: 100%;

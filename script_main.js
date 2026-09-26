@@ -855,6 +855,18 @@ const STREAMING_SERVERS = [
         name: 'Embed.su',
         movie: (id) => `https://embed.su/embed/movie/${id}`,
         tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'VixSrc',
+        // Player includes a built-in Download button where the source provides one
+        movie: (id) => `https://vixsrc.to/movie/${id}`,
+        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`
+    },
+    {
+        name: 'Videasy',
+        // Quality selector up to 1080p; themed to app accent
+        movie: (id) => `https://player.videasy.net/movie/${id}?color=E11D48`,
+        tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}?color=E11D48`
     }
 ];
 
@@ -1962,6 +1974,19 @@ function loadServer(index) {
     document.querySelectorAll('.server-tab').forEach((tab, i) => {
         tab.classList.toggle('active', i === index);
     });
+}
+
+// Open a player page in a new tab that offers download/quality options
+function openDownload() {
+    if (!currentStreamItem) return;
+    const id = currentStreamItem.id;
+    let url;
+    if (currentStreamItem.media_type === 'tv') {
+        url = `https://player.videasy.net/tv/${id}/${currentSeason}/${currentEpisode}?color=E11D48&download=true`;
+    } else {
+        url = `https://player.videasy.net/movie/${id}?color=E11D48&download=true`;
+    }
+    window.open(url, '_blank', 'noopener');
 }
 
 // Load trailer
