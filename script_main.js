@@ -878,19 +878,18 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         });
     }
 
+    const hubScroll = document.getElementById('hubScroll');
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
 
-    // Genre hub horizontal scroller (only on home section)
-    const hubRow = document.querySelector('.hub-row');
-    const hubScroll = document.getElementById('hubScroll');
-
-    rightArrow.addEventListener("click", () => {
-        if (hubScroll) hubScroll.scrollLeft += 500;
-    });
-    leftArrow.addEventListener("click", () => {
-        if (hubScroll) hubScroll.scrollLeft -= 500;
-    });
+    if (hubScroll) {
+        rightArrow.addEventListener("click", () => {
+            hubScroll.scrollLeft += 500;
+        });
+        leftArrow.addEventListener("click", () => {
+            hubScroll.scrollLeft -= 500;
+        });
+    }
 
     let onPage = null;
     let whichPage = localStorage.getItem('page');
