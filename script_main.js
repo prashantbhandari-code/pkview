@@ -433,6 +433,7 @@ function openAnimeStream(item) {
 }
 
 function loadAnimeServer(index) {
+    const prevIndex = currentServerIndex;
     currentServerIndex = index;
     const frame = document.getElementById('streamFrame');
     const animeId = currentStreamItem?.anilist_id || currentStreamItem?.id;
@@ -442,9 +443,10 @@ function loadAnimeServer(index) {
     if (server.external) {
         // Open in new tab instead of iframe
         window.open(server.url(animeId, currentAnimeEpisode, currentAnimeLang), '_blank');
-        // Revert active tab to previous server
+        // External servers block iframes — keep the previous embed active
+        currentServerIndex = prevIndex;
         document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
-            tab.classList.toggle('active', i === currentServerIndex && i !== index);
+            tab.classList.toggle('active', i === prevIndex);
         });
         return;
     }
@@ -1216,7 +1218,7 @@ function pageCall(page) {
         const url = new URL(lastUrl, window.location.origin);
         url.searchParams.set('page', page);
         const whichPage = localStorage.getItem('page');
-        LoadMovieOrTv(whichPage, url.pathname + url.search);
+        LoadMovieOrTv(whichPage, url.href);
     } catch (e) {
         console.error('pageCall URL parse error:', e);
     }
@@ -1429,6 +1431,18 @@ function setupWatchButtons() {
             if (card && card.dataset.item) {
                 const item = JSON.parse(card.dataset.item);
                 openStream(item);
+            }
+        });
+    });
+    // Make the whole card tappable — mobile has no hover to reveal the Watch Now button
+    document.querySelectorAll('#main .movie, #main .tvshow').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.favorite-btn, .watchnow')) return;
+            if (!card.dataset.item) return;
+            try {
+                openStream(JSON.parse(card.dataset.item));
+            } catch (err) {
+                console.error('Bad card item data:', err);
             }
         });
     });
