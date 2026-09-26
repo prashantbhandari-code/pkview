@@ -7,11 +7,8 @@ const LIVE_SPORTS_ENABLED = false; // domain dead; flip true when a replacement 
 const NEPALI_FEATURED_ID = 1423966;
 const ANILIST_API = 'https://graphql.anilist.co';
 
-// --- AniList GraphQL Queries ---
-const ANILIST_QUERIES = {
-    trending: `query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-            media(sort: TRENDING_DESC, type: ANIME, status: RELEASING) {
+// --- AniList GraphQL Queries (generated from shared field list) ---
+const ANILIST_MEDIA_FIELDS = `
                 id
                 title { romaji english native }
                 coverImage { large medium color }
@@ -32,98 +29,57 @@ const ANILIST_QUERIES = {
                 countryOfOrigin
                 streamingEpisodes { title thumbnail url site }
                 relations { edges { node { id title { romaji english } format } relationType } }
-                synonyms
-            }
-        }
-    }`,
-    popular: `query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-            media(sort: POPULARITY_DESC, type: ANIME) {
-                id
-                title { romaji english native }
-                coverImage { large medium color }
-                bannerImage
-                averageScore
-                meanScore
-                popularity
-                episodes
-                status
-                format
-                genres
-                description(asHtml: false)
-                nextAiringEpisode { episode timeUntilAiring airingAt }
-                startDate { year month day }
-                endDate { year month day }
-                studios { nodes { name isAnimationStudio } }
-                source
-                countryOfOrigin
-                streamingEpisodes { title thumbnail url site }
-                relations { edges { node { id title { romaji english } format } relationType } }
-                synonyms
-            }
-        }
-    }`,
-    topRated: `query ($page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-            media(sort: SCORE_DESC, type: ANIME) {
-                id
-                title { romaji english native }
-                coverImage { large medium color }
-                bannerImage
-                averageScore
-                meanScore
-                popularity
-                episodes
-                status
-                format
-                genres
-                description(asHtml: false)
-                nextAiringEpisode { episode timeUntilAiring airingAt }
-                startDate { year month day }
-                endDate { year month day }
-                studios { nodes { name isAnimationStudio } }
-                source
-                countryOfOrigin
-                streamingEpisodes { title thumbnail url site }
-                relations { edges { node { id title { romaji english } format } relationType } }
-                synonyms
-            }
-        }
-    }`,
-    search: `query ($search: String, $page: Int, $perPage: Int) {
-        Page(page: $page, perPage: $perPage) {
-            media(search: $search, type: ANIME) {
-                id
-                title { romaji english native }
-                coverImage { large medium color }
-                bannerImage
-                averageScore
-                meanScore
-                popularity
-                episodes
-                status
-                format
-                genres
-                description(asHtml: false)
-                nextAiringEpisode { episode timeUntilAiring airingAt }
-                startDate { year month day }
-                endDate { year month day }
-                studios { nodes { name isAnimationStudio } }
-                source
-                countryOfOrigin
-                streamingEpisodes { title thumbnail url site }
-                relations { edges { node { id title { romaji english } format } relationType } }
-                synonyms
-            }
-        }
-    }`
+                synonyms`;
+
+const ANILIST_SORTS = {
+    trending: 'TRENDING_DESC',
+    popular: 'POPULARITY_DESC',
+    topRated: 'SCORE_DESC'
 };
+
+// Trending intentionally filters to currently-airing shows
+const ANILIST_EXTRA_ARGS = { trending: ', status: RELEASING' };
+
+function buildAniListQuery(kind) {
+    if (kind === 'search') {
+        return `query ($search: String, $page: Int, $perPage: Int) {
+            Page(page: $page, perPage: $perPage) {
+                media(search: $search, type: ANIME) {${ANILIST_MEDIA_FIELDS}
+                }
+            }
+        }`;
+    }
+    return `query ($page: Int, $perPage: Int) {
+        Page(page: $page, perPage: $perPage) {
+            media(sort: ${ANILIST_SORTS[kind]}, type: ANIME${ANILIST_EXTRA_ARGS[kind] || ''}) {${ANILIST_MEDIA_FIELDS}
+            }
+        }
+    }`;
+}
+
+const ANILIST_QUERIES = {
+    trending: buildAniListQuery('trending'),
+    popular: buildAniListQuery('popular'),
+    topRated: buildAniListQuery('topRated'),
+    search: buildAniListQuery('search')
+};
+
+// Fetch with timeout — a hung request must never leave a spinner spinning forever
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
 
 // Fetch anime from AniList GraphQL
 async function fetchAniList(queryName, variables = {}) {
     const query = ANILIST_QUERIES[queryName];
     if (!query) throw new Error('Unknown query: ' + queryName);
-    const res = await fetch(ANILIST_API, {
+    const res = await fetchWithTimeout(ANILIST_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ query, variables })
@@ -144,7 +100,7 @@ async function fetchAniListMediaById(id) {
             status
         }
     }`;
-    const res = await fetch(ANILIST_API, {
+    const res = await fetchWithTimeout(ANILIST_API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ query, variables: { id: Number(id) } })
@@ -524,7 +480,7 @@ function switchAnimeServer(index) {
 async function loadHindiKDramas() {
     try {
         // Search for popular Korean dramas with Hindi in title
-        const res = await fetch(KOREAN_HINDI_TV_url);
+        const res = await fetchWithTimeout(KOREAN_HINDI_TV_url);
         if (!res.ok) throw new Error('Search failed');
         const data = await res.json();
         
@@ -585,8 +541,7 @@ async function LoadSouthHindiMovies() {
 
     let allResults = [];
 
-    const fetches = await Promise.allSettled(
-        strategies.map(url => fetch(url).then(res => (res.ok ? res.json() : null)))
+    const fetches = await Promise.allSettled(            strategies.map(url => fetchWithTimeout(url, {}, 8000).then(res => (res.ok ? res.json() : null)))
     );
 
     for (const outcome of fetches) {
@@ -634,7 +589,7 @@ async function LoadSouthHindiMovies() {
 // Sports content with fallback
 async function loadSportsContent() {
     try {
-        const res = await fetch(SPORTS_TV_url);
+        const res = await fetchWithTimeout(SPORTS_TV_url);
         const data = await res.json();
         if (data.results && data.results.length > 0) {
             LoadMovieOrTv('tv', SPORTS_TV_url);
@@ -876,8 +831,18 @@ let currentServerIndex = 0;
 let currentTvSeasons = [];
 let currentSeason = 1;
 let currentEpisode = 1;
-let watchHistory = JSON.parse(localStorage.getItem('pkview_history') || '[]');
-let favorites = JSON.parse(localStorage.getItem('pkview_favorites') || '[]');
+// Safe localStorage JSON parse — corrupted storage must never prevent boot
+function safeParse(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+    } catch {
+        return fallback;
+    }
+}
+
+let watchHistory = safeParse('pkview_history', []);
+let favorites = safeParse('pkview_favorites', []);
 let selectedGenre = [];
 let currentSection = 'home'; // home, bollywood, anime, sports
 let currentPage = 1;
@@ -1296,7 +1261,7 @@ async function LoadMovieOrTv(whichPage, url) {
     showSpinner();
 
     try {
-        let res = await fetch(url);
+        let res = await fetchWithTimeout(url);
         if (!res.ok) throw new Error('API request failed');
         let data = await res.json();
 
@@ -1578,14 +1543,13 @@ async function loadNepaliFeatured() {
     if (!container) return;
 
     try {
-        const res = await fetch(tmdbUrl('movie/' + NEPALI_FEATURED_ID));
+        const res = await fetchWithTimeout(tmdbUrl('movie/' + NEPALI_FEATURED_ID));
         const movie = await res.json();
         const safeTitle = escapeHtml(movie.title || '');
         const safeOverview = escapeHtml(movie.overview ? movie.overview.substring(0, 200) + '...' : '');
         const backdropUrl = movie.backdrop_path ? 'https://image.tmdb.org/t/p/w1280' + movie.backdrop_path : '';
         const releaseDate = escapeHtml(movie.release_date || '');
         const rating = movie.vote_average ? ' · ⭐ ' + movie.vote_average.toFixed(1) : '';
-        const movieJson = JSON.stringify(movie).replace(/"/g, '&quot;');
 
         container.innerHTML = `
             <div class="nepali-banner fade-in">
@@ -1595,12 +1559,22 @@ async function loadNepaliFeatured() {
                     <h1 class="nepali-banner-title">${safeTitle}</h1>
                     <p class="nepali-banner-meta">${releaseDate}${rating}</p>
                     <p class="nepali-banner-desc">${safeOverview}</p>
-                    <button class="nepali-banner-btn" onclick="openStream(${movieJson}, 'movie')">
+                    <button class="nepali-banner-btn" data-item='${escapeHtml(JSON.stringify({ ...movie, media_type: 'movie' }))}'>
                         ▶ Watch Now
                     </button>
                 </div>
             </div>
         `;
+        const bannerBtn = container.querySelector('.nepali-banner-btn');
+        if (bannerBtn) {
+            bannerBtn.addEventListener('click', () => {
+                try {
+                    openStream(JSON.parse(bannerBtn.dataset.item), 'movie');
+                } catch (e) {
+                    console.error('Bad banner item data:', e);
+                }
+            });
+        }
     } catch (e) {
         container.innerHTML = '<div class="nepali-banner-empty">Featured movie unavailable</div>';
     }
@@ -1615,7 +1589,7 @@ async function loadHomeSpotlight() {
     if (!el) return;
     try {
         if (!_spotData.length) {
-            const res = await fetch(tmdbUrl('movie/popular'));
+            const res = await fetchWithTimeout(tmdbUrl('movie/popular'));
             const data = await res.json();
             _spotData = (data.results || []).filter(m => m.backdrop_path).slice(0, 5);
         }
@@ -1887,7 +1861,7 @@ function openStream(item, mediaType) {
 async function loadSeasonEpisode(tvId) {
     try {
         const detailsUrl = tmdbUrl('tv/' + tvId);
-        const res = await fetch(detailsUrl);
+        const res = await fetchWithTimeout(detailsUrl);
         const details = await res.json();
 
         currentTvSeasons = details.seasons || [];
@@ -1920,7 +1894,7 @@ async function loadSeasonEpisode(tvId) {
 async function loadEpisodes(tvId, seasonNum) {
     try {
         const seasonUrl = tmdbUrl('tv/' + tvId + '/season/' + seasonNum);
-        const res = await fetch(seasonUrl);
+        const res = await fetchWithTimeout(seasonUrl);
         const data = await res.json();
 
         const episodeSelect = document.getElementById('episodeSelect');
@@ -1996,7 +1970,7 @@ async function loadTrailer(item) {
     const url = tmdbUrl(endpoint);
 
     try {
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url);
         const data = await res.json();
         const trailerBtn = document.getElementById('trailerBtn');
 
