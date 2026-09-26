@@ -1,12 +1,9 @@
 {
   "name": "pkview",
   "version": "1.0.0",
-  "description": "pkview - Movie & TV Streaming Platform",
-  "main": "server.js",
+  "description": "pkview - Movie & TV Streaming Platform (static site, served via GitHub Pages)",
   "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2"
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 3000"
   }
 }
