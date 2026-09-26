@@ -880,14 +880,13 @@ window.addEventListener("DOMContentLoaded", (ev) => {
 
     const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
     const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
-    const tagsEl = document.getElementById('tags');
 
     rightArrow.addEventListener("click", () => {
-        tagsEl.scrollLeft += 500;
+        document.querySelector('.hub-row').scrollLeft += 500;
         manageIcons();
     });
     leftArrow.addEventListener("click", () => {
-        tagsEl.scrollLeft -= 500;
+        document.querySelector('.hub-row').scrollLeft -= 500;
         manageIcons();
     });
 
@@ -1163,21 +1162,23 @@ function switchSection(section) {
 }
 
 const manageIcons = () => {
-    const tagsEl = document.getElementById('tags');
+    const row = document.querySelector('.hub-row');
     const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
     const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
 
-    if (tagsEl.scrollLeft >= 20) {
-        leftArrowContainer.classList.add("active");
-    } else {
-        leftArrowContainer.classList.remove("active");
-    }
-    let maxScrollValue = tagsEl.scrollWidth - tagsEl.clientWidth - 20;
+    if (row) {
+        if (row.scrollLeft >= 20) {
+            leftArrowContainer.classList.add("active");
+        } else {
+            leftArrowContainer.classList.remove("active");
+        }
+        let maxScrollValue = row.scrollWidth - row.clientWidth - 20;
 
-    if (tagsEl.scrollLeft >= maxScrollValue) {
-        rightArrowContainer.classList.remove("active");
-    } else {
-        rightArrowContainer.classList.add("active");
+        if (row.scrollLeft >= maxScrollValue) {
+            rightArrowContainer.classList.remove("active");
+        } else {
+            rightArrowContainer.classList.add("active");
+        }
     }
 }
 
