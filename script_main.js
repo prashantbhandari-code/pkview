@@ -120,7 +120,7 @@ function getStudio(a){if(!a.studios?.nodes)return '';const m=a.studios.nodes.fin
 
 let _heroInterval=null,_heroIdx=0;
 function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length||currentSection!=='anime'){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
-function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h2 class="anime-hero-title">'+escapeHtml(t)+'</h2><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
+function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const safeBanner=escapeHtml(b);const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+safeBanner+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h2 class="anime-hero-title">'+escapeHtml(t)+'</h2><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
 }
 function openAnimeStreamFromHero(i){const a=window._animeHeroData?.[i];if(!a)return;openAnimeStream({id:a.id,title:a.title?.english||a.title?.romaji||a.title?.native||'Untitled',anilist_id:a.id,episodes:a.episodes,media_type:'anime'});}
 function showAnimeSortBar(){const b=document.getElementById('animeSortBar');if(b)b.style.display='flex';}
@@ -274,20 +274,20 @@ function showAniListAnime(data) {
         const srcHtml = srcLabel ? '<div class="anime-source">Based on: ' + escapeHtml(srcLabel) + '</div>' : '';
 
         card.innerHTML = `
-        <div class="anime-card-poster">
-            <img src="${poster}" alt="${sTitle}" loading="lazy">
-            <span class="anime-format-badge ${fmtCls}">${fmtBadge}</span>
-            <span class="anime-score-badge ${scCls}">\u2605 ${scoreVal}</span>
-        </div>
+        <img src="${escapeHtml(poster)}" alt="${sTitle}" loading="lazy">
         <div class="anime-card-info">
         <h3 class="anime-card-title">${sTitle}</h3>
-        ${studioHtml}
-        <div class="anime-card-genres">${genres.map(g => '<span class="anime-genre-tag">' + escapeHtml(g) + '</span>').join('')}</div>
+        <div class="anime-card-meta">
+        ${studioHtml ? `<span class="anime-studio-tag">${escapeHtml(studio)}</span>` : ''}
+        ${fmtBadge ? `<span class="anime-format-tag">${fmtBadge}</span>` : ''}
+        <span class="rating">${scoreVal}</span>
+        </div>
         <div class="anime-broadcast-note ${broadcast.type}">
             <span class="broadcast-icon">${broadcast.icon}</span>
             <span class="broadcast-text">${escapeHtml(broadcast.text)}</span>
         </div>
-        ${srcHtml}
+        <div class="anime-card-genres">${genres.map(g => '<span class="anime-genre-tag">' + escapeHtml(g) + '</span>').join('')}</div>
+        ${srcHtml ? `<div class="anime-source">${escapeHtml(srcLabel)}</div>` : ''}
         <div class="anime-card-actions">
             <button class="watchnow anime-watch-btn">Watch Now</button>
             <button class="favorite-btn" data-id="${anime.id}" data-type="anime" title="Add to favorites">
@@ -297,9 +297,7 @@ function showAniListAnime(data) {
         </div>
         <div class="overview">
         <h3>${sTitle}</h3>
-        <div class="anime-overview-meta">${fmtBadge} \u00b7 ${episodes} eps \u00b7 ${escapeHtml(status)}${studio ? ' \u00b7 ' + escapeHtml(studio) : ''}</div>
         <span class="overview-content">${sDesc}...</span>
-        ${sequelHtml}
         <br><button class="watchnow">Watch Now</button>
         </span>
         </div>
@@ -860,6 +858,28 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     setupHeaderControls();
     setupNavigation();
 
+    document.querySelectorAll('.provider-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.querySelectorAll('.provider-btn').forEach(item => item.classList.remove('active'));
+            button.classList.add('active');
+            currentSection = 'provider';
+            selectedGenre = [];
+            const providerId = button.dataset.provider;
+            const providerName = button.dataset.providerName;
+            const providerUrl = tmdbUrl('discover/movie', {
+                with_watch_providers: providerId,
+                watch_region: 'US',
+                with_watch_monetization_types: 'flatrate',
+                sort_by: 'popularity.desc',
+                'vote_count.gte': 20
+            });
+            const label = document.querySelector('.section-label .section-title');
+            if (label) label.textContent = `${providerName} Picks`;
+            LoadMovieOrTv('movie', providerUrl);
+            document.getElementById('main')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
     // Genre hub delegation (setGenre('X') onclicks were removed; buttons use data-genre)
     document.addEventListener('click', (e) => {
         const btn = e.target.closest('.hub-btn');
@@ -1363,10 +1383,8 @@ function showMovies(data) {
         const rating = formatRating(vote_average);
 
         movieEl.innerHTML = `
-        <div>
+        <img src="${escapeHtml(posterSrc)}" alt="${safeTitle}" loading="lazy">
         <span class="releaseDate">${escapeHtml(formatDate(release_date))}</span>
-        <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
-        </div>
         <div class="movie-info">
         <h3>${safeTitle}</h3>
         <div class="movie-info-meta">
@@ -1412,10 +1430,8 @@ function showTvShows(data) {
         const rating = formatRating(vote_average);
 
         tvEl.innerHTML = `
-      <div>
+      <img src="${escapeHtml(posterSrc)}" alt="${safeName}" loading="lazy">
       <span class="releaseDate">${escapeHtml(formatDate(first_air_date))}</span>
-      <img src="${posterSrc}" alt="${safeName}" loading="lazy">
-      </div>
       <div class="movie-info">
       <h3>${safeName}</h3>
       <div class="movie-info-meta">
@@ -1586,7 +1602,7 @@ async function loadNepaliFeatured() {
 
         container.innerHTML = `
             <div class="nepali-banner fade-in">
-                <img src="${backdropUrl}" alt="${safeTitle}" class="nepali-banner-img">
+                <img src="${escapeHtml(backdropUrl)}" alt="${safeTitle}" class="nepali-banner-img">
                 <div class="nepali-banner-content">
                     <span class="nepali-banner-tag">Featured Nepali Film</span>
                     <h1 class="nepali-banner-title">${safeTitle}</h1>
@@ -1751,7 +1767,7 @@ function loadWatchHistory() {
             : /^https?:\/\//.test(item.poster) ? item.poster
             : IMG_url + item.poster;
         div.innerHTML = `
-            <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
+            <img src="${escapeHtml(posterSrc)}" alt="${safeTitle}" loading="lazy">
             <div class="movie-info"><h3>${safeTitle}</h3></div>
         `;
         div.addEventListener('click', () => {
@@ -1824,7 +1840,7 @@ function loadFavorites() {
                     });
                     const displayName = escapeHtml(title);
                     div.innerHTML = `
-                        <img src="${cover}" alt="${displayName}" loading="lazy">
+                        <img src="${escapeHtml(cover)}" alt="${displayName}" loading="lazy">
                         <div class="movie-info"><h3>${displayName}</h3></div>
                     `;
                     div.addEventListener('click', () => openAnimeStream(JSON.parse(div.dataset.item)));
@@ -1848,7 +1864,7 @@ function loadFavorites() {
                 const displayName = escapeHtml(data.title || data.name || '');
                 const posterSrc = data.poster_path ? IMG_url + data.poster_path : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU';
                 div.innerHTML = `
-                    <img src="${posterSrc}" alt="${displayName}">
+                    <img src="${escapeHtml(posterSrc)}" alt="${displayName}">
                     <div class="movie-info"><h3>${displayName}</h3></div>
                 `;
                 div.addEventListener('click', () => {
