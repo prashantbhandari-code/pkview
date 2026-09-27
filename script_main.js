@@ -880,37 +880,6 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         });
     });
 
-    // Genre hub delegation (setGenre('X') onclicks were removed; buttons use data-genre)
-    document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.hub-btn');
-        if (btn) {
-            const genreId = btn.getAttribute('data-genre');
-            if (genreId) setGenreFromStrip(genreId);
-        }
-    });
-
-    // Filter reset button in the hero
-    const filterReset = document.getElementById('filterReset');
-    if (filterReset) {
-        filterReset.addEventListener('click', () => {
-            selectedGenre = [];
-            setGenreFromStrip(null);
-        });
-    }
-
-    const hubScroll = document.getElementById('hubScroll');
-    const rightArrow = document.querySelector(".scrollable-tabs-container .right-arrow svg");
-    const leftArrow = document.querySelector(".scrollable-tabs-container .left-arrow svg");
-
-    if (hubScroll && rightArrow && leftArrow) {
-        rightArrow.addEventListener("click", () => {
-            hubScroll.scrollLeft += 500;
-        });
-        leftArrow.addEventListener("click", () => {
-            hubScroll.scrollLeft -= 500;
-        });
-    }
-
     let onPage = null;
     let whichPage = localStorage.getItem('page');
     if (whichPage == null) {
@@ -1090,9 +1059,7 @@ function setupNavigation() {
 
 function switchSection(section) {
     currentSection = section;
-    selectedGenre = [];
     currentPage = 1;
-    highlightSelection();
 
     // Section transition animation
     const main = document.querySelector('#main');
@@ -1100,19 +1067,12 @@ function switchSection(section) {
     void main.offsetWidth;
     main.classList.add('section-transition');
 
-    // Update active nav link
+    // Update active nav link (nav bar removed; footer links still drive switching)
     document.querySelectorAll('.nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.dataset.section === section) {
-            link.classList.add('active');
-        }
     });
 
-    // Genre tag strip is now in the hub section; hidden on all sections except home
-    const genreStrip = document.querySelector('.hub-section.primary');
-    if (genreStrip) {
-        genreStrip.style.display = section === 'home' ? 'flex' : 'none';
-    }
+    // Genre tag strip was removed from the page
 
     // Anime sort bar & community belong to the anime section only (redesign dropped this)
     if (section !== 'anime') {
@@ -1186,28 +1146,6 @@ function switchSection(section) {
         currentSection = 'sports';
         loadSportsContent();
         loadLiveSports();
-    }
-}
-
-const manageIcons = () => {
-    const row = document.querySelector('.hub-row');
-    const leftArrowContainer = document.querySelector(".scrollable-tabs-container .left-arrow");
-    const rightArrowContainer = document.querySelector(".scrollable-tabs-container .right-arrow");
-    if (!tagsEl || !leftArrowContainer || !rightArrowContainer) return;
-
-    if (row && leftArrowContainer) {
-        if (row.scrollLeft >= 20) {
-            leftArrowContainer.classList.add("active");
-        } else {
-            leftArrowContainer.classList.remove("active");
-        }
-        let maxScrollValue = row.scrollWidth - row.clientWidth - 20;
-
-        if (row.scrollLeft >= maxScrollValue) {
-            rightArrowContainer.classList.remove("active");
-        } else {
-            rightArrowContainer.classList.add("active");
-        }
     }
 }
 
