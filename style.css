@@ -1144,7 +1144,9 @@ body.light-theme .footer-link:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-svg {
+/* Inline decorative SVGs only — Font Awesome's JS replaces <i> with
+   <svg class="svg-inline--fa">, which must inherit its context colour. */
+svg:not(.svg-inline--fa) {
   color: #fff;
   cursor: pointer;
   width: 30px;
@@ -1389,6 +1391,57 @@ hr {
   padding: 8px;
 }
 
+/* Player language hint — states exactly what the chosen server does with the selector */
+.player-hint {
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 16px;
+  background: rgba(148, 163, 184, 0.07);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.player-hint i {
+  margin-top: 2px;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.player-hint strong {
+  color: #e2e8f0;
+  font-weight: 700;
+}
+
+.player-hint.supports-audio {
+  background: rgba(34, 197, 94, 0.08);
+  color: #86efac;
+}
+
+.player-hint.supports-audio i {
+  color: #4ade80;
+}
+
+.player-hint.supports-audio strong {
+  color: #dcfce7;
+}
+
+.player-hint.supports-subtitle {
+  background: rgba(59, 130, 246, 0.08);
+  color: #93c5fd;
+}
+
+.player-hint.supports-subtitle i {
+  color: #60a5fa;
+}
+
+.player-hint.supports-subtitle strong {
+  color: #dbeafe;
+}
+
 .close-stream {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1466,6 +1519,40 @@ hr {
 
 .server-tab.active::after {
   display: none;
+}
+
+/* Language-capability flag on a server tab */
+.tab-flag {
+  display: inline-block;
+  margin-left: 7px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.tab-flag.audio {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.tab-flag.subtitle {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+}
+
+.server-tab.active .tab-flag.audio {
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+}
+
+.server-tab.active .tab-flag.subtitle {
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
 }
 
 /* Anime Server Tabs */
@@ -2373,6 +2460,146 @@ body.light-theme .anime-server-tab.active {
   color: #ff1361;
 }
 
+body.light-theme .player-hint {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.07);
+  color: #475569;
+}
+
+body.light-theme .player-hint i {
+  color: #64748b;
+}
+
+body.light-theme .player-hint strong {
+  color: #0f172a;
+}
+
+body.light-theme .player-hint.supports-audio {
+  background: rgba(22, 163, 74, 0.09);
+  color: #15803d;
+}
+
+body.light-theme .player-hint.supports-audio i,
+body.light-theme .player-hint.supports-audio strong {
+  color: #166534;
+}
+
+body.light-theme .player-hint.supports-subtitle {
+  background: rgba(37, 99, 235, 0.09);
+  color: #1d4ed8;
+}
+
+body.light-theme .player-hint.supports-subtitle i,
+body.light-theme .player-hint.supports-subtitle strong {
+  color: #1e40af;
+}
+
+body.light-theme .tab-flag.audio {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
+body.light-theme .tab-flag.subtitle {
+  background: rgba(37, 99, 235, 0.14);
+  color: #1d4ed8;
+}
+
+/* Hindi dual-audio download source links inside the player modal */
+.dl-sources {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(148, 163, 184, 0.07);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.dl-source-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-right: 2px;
+}
+
+.dl-source-label i {
+  color: #ff6b35;
+  font-size: 0.82rem;
+}
+
+.dl-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  color: #e2e8f0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.dl-source i {
+  font-size: 0.68rem;
+  color: #ff1361;
+}
+
+.dl-source:hover {
+  background: #ff1361;
+  border-color: #ff1361;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(255, 19, 97, 0.35);
+}
+
+.dl-source:hover i {
+  color: #fff;
+}
+
+body.light-theme .dl-sources {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+
+body.light-theme .dl-source-label {
+  color: #475569;
+}
+
+body.light-theme .dl-source {
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+
+body.light-theme .dl-source:hover {
+  background: #ff1361;
+  border-color: #ff1361;
+  color: #fff;
+}
+
+@media screen and (max-width: 700px) {
+  .dl-sources {
+    padding: 9px 12px;
+    gap: 6px;
+  }
+
+  .dl-source-label {
+    width: 100%;
+  }
+
+  .dl-source {
+    padding: 6px 10px;
+    font-size: 0.7rem;
+  }
+}
+
 body.light-theme .season-select-container {
   background: linear-gradient(135deg, #f0f0f5 0%, #fff 100%);
   border-top-color: #e9ecef;
@@ -2677,6 +2904,17 @@ body.light-theme .episode-btn.watched {
     font-size: 0.75rem;
   }
 
+  .player-hint {
+    padding: 9px 12px;
+    font-size: 0.72rem;
+  }
+
+  .tab-flag {
+    margin-left: 5px;
+    padding: 1px 4px;
+    font-size: 0.5rem;
+  }
+
   .season-select-container {
     padding: 8px 12px;
   }
@@ -2778,6 +3016,7 @@ body.light-theme .episode-btn.watched {
   .footer {
     padding: 16px 10px 10px;
   }
+}
 
 /* Touch device improvements */
 @media (hover: none) and (pointer: coarse) {
@@ -3536,4 +3775,589 @@ body::before {
   body::before {
     animation: none !important;
   }
+  .side-menu {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   Side menu
+   Fixed sidebar on desktop, off-canvas drawer on small screens.
+   ============================================================ */
+.menu-toggle,
+.side-close {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-family: inherit;
+  transition: all 0.25s ease;
+}
+
+.menu-toggle:hover,
+.side-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.menu-toggle:active,
+.side-close:active {
+  transform: scale(0.94);
+}
+
+/* The header brand only shows when the sidebar is collapsed away */
+.header-brand {
+  display: none;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 264px;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 0.85rem 1.1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: rgba(10, 14, 39, 0.96);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: none;
+  z-index: 300;
+  scrollbar-width: thin;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.side-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.side-menu::-webkit-scrollbar-thumb {
+  background: var(--gradient-1);
+  border-radius: 10px;
+}
+
+.side-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.side-label {
+  display: block;
+  padding: 1rem 0.6rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.side-nav .nav-link {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0.68rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.side-nav .nav-link i {
+  width: 22px;
+  text-align: center;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.side-nav .nav-link.active {
+  box-shadow: 0 6px 18px var(--accent-glow);
+}
+
+.side-nav .nav-link.active i {
+  opacity: 1;
+}
+
+.side-foot {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.side-github {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.side-github:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.side-github i {
+  font-size: 1rem;
+}
+
+.side-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 290;
+  background: rgba(4, 6, 20, 0.62);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+body.menu-open .side-backdrop {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Desktop: the menu is part of the page grid, content sits beside it */
+@media (min-width: 1025px) {
+  body {
+    padding-left: 264px;
+  }
+}
+
+/* Tablet & mobile: the menu becomes an off-canvas drawer */
+@media (max-width: 1024px) {
+  .menu-toggle,
+  .side-close {
+    display: flex;
+  }
+
+  .header-brand {
+    display: flex;
+  }
+
+  .side-menu {
+    width: 288px;
+    max-width: 86vw;
+    transform: translateX(-102%);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+    will-change: transform;
+  }
+
+  body.menu-open .side-menu {
+    transform: translateX(0);
+  }
+
+  body.menu-open {
+    overflow: hidden;
+  }
+
+  .side-nav .nav-link {
+    padding: 0.8rem 0.85rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-brand .brand-text {
+    display: none;
+  }
+
+  .search-form {
+    max-width: none;
+  }
+}
+
+/* The search field must fit the space beside the side menu (70vw overshoots) */
+@media (min-width: 900px) {
+  .search-form {
+    flex: 1 1 auto;
+  }
+
+  .search {
+    width: 100%;
+  }
+}
+
+/* Light theme */
+body.light-theme .side-menu {
+  background: rgba(246, 247, 252, 0.98);
+  border-right-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .side-head,
+body.light-theme .side-foot {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .side-label {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+body.light-theme .menu-toggle,
+body.light-theme .side-close {
+  color: #333;
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .menu-toggle:hover,
+body.light-theme .side-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .side-github {
+  color: #555;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .side-github:hover {
+  color: #111;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .side-backdrop {
+  background: rgba(20, 22, 40, 0.35);
+}
+
+/* The wordmark uses a white gradient fill, which vanishes on a light sidebar */
+body.light-theme .brand-text {
+  background: linear-gradient(135deg, #1a1a2e 55%, var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light-theme .side-nav .nav-link {
+  color: rgba(0, 0, 0, 0.66);
+}
+
+body.light-theme .side-nav .nav-link i {
+  opacity: 0.85;
+}
+
+body.light-theme .side-nav .nav-link.active {
+  color: #fff;
+}
+
+/* Header controls keep white icons otherwise, which vanish on a light header */
+body.light-theme .theme-toggle,
+body.light-theme .github-link {
+  color: #333;
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .theme-toggle:hover,
+body.light-theme .github-link:hover {
+  color: #111;
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+body.light-theme .theme-toggle i {
+  opacity: 1;
+}
+
+/* ============================================================
+   Footer
+   The redesign's footer markup (footer-grid / footer-col /
+   footer-links / footer-bottom) shipped with no styles at all,
+   so these are the missing rules — kept deliberately compact.
+   ============================================================ */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.footer-col h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+}
+
+.footer-col h4 {
+  margin: 0 0 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.footer-desc {
+  margin: 0 0 1rem;
+  max-width: 330px;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.social-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.social-links a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.25s ease;
+}
+
+.social-links a:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.footer-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.footer-links li {
+  list-style: none;
+  margin: 0;
+}
+
+.footer-links a,
+.footer-links .footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a i {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.footer-links a:hover,
+.footer-links .footer-link:hover {
+  color: #fff;
+}
+
+.footer-bottom {
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.footer-bottom p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Tablets — the brand becomes one compact row and the long section
+   list flows into two short columns */
+@media (max-width: 900px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem 1rem;
+  }
+
+  .footer-col:first-child {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .footer-col:first-child h3 {
+    margin-bottom: 0.35rem;
+  }
+
+  .footer-desc {
+    max-width: 380px;
+    margin-bottom: 0;
+  }
+
+  .footer-col:nth-child(2) .footer-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 0.75rem;
+  }
+}
+
+/* Phones: drop the marketing copy into a single brand row and
+   flow the long section list into two short columns */
+@media (max-width: 600px) {
+  .footer-desc {
+    display: none;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.1rem 0.9rem;
+  }
+
+  .footer-col:first-child {
+    align-items: center;
+    padding-bottom: 0.9rem;
+  }
+
+  .footer-col:first-child h3 {
+    margin: 0;
+  }
+
+  .footer-desc {
+    display: none;
+  }
+
+  .footer-col:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .footer-col:nth-child(2) .footer-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .footer-links a,
+  .footer-links .footer-link {
+    font-size: 0.78rem;
+  }
+}
+
+body.light-theme .footer-col:first-child {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 480px) {
+  .footer {
+    margin-top: 36px;
+    padding: 22px 14px 14px;
+  }
+
+  .footer-grid {
+    gap: 1.1rem 0.85rem;
+  }
+
+  .footer-col h3 {
+    font-size: 1.05rem;
+  }
+
+  .footer-col h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+  }
+
+  .footer-desc {
+    margin-bottom: 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .footer-links {
+    gap: 0.4rem;
+  }
+
+  .footer-links a,
+  .footer-links .footer-link {
+    font-size: 0.78rem;
+  }
+
+  .social-links a {
+    width: 30px;
+    height: 30px;
+  }
+
+  .footer-bottom {
+    margin-top: 1.2rem;
+  }
+}
+
+/* Light theme */
+body.light-theme .footer-col h3 {
+  color: #1a1a2e;
+}
+
+body.light-theme .footer-col h4 {
+  color: rgba(0, 0, 0, 0.42);
+}
+
+body.light-theme .footer-desc,
+body.light-theme .footer-links a,
+body.light-theme .footer-links .footer-link {
+  color: #4a5568;
+}
+
+body.light-theme .footer-links a:hover,
+body.light-theme .footer-links .footer-link:hover {
+  color: #111;
+}
+
+body.light-theme .social-links a {
+  color: #555;
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .footer-bottom {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light-theme .footer-bottom p {
+  color: rgba(0, 0, 0, 0.45);
 }

@@ -204,14 +204,24 @@ const DOCU_url = buildDiscoverUrl('tv', { with_genres: 99, sort_by: 'popularity.
 const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'popularity.desc', 'vote_count.gte': 100 });
 
 // --- Miruro & Anime Streaming Servers ---
+// `langs` lists the audio versions the provider actually documents. MegaPlay /
+// MegaVid take a sub-or-dub path segment; VidNest publishes a real `hindi`
+// route (vidnest.fun/anime/{anilistId}/{ep}/hindi).
 const ANIME_SERVERS = [
     {
         name: 'MegaPlay',
+        langs: ['sub', 'dub'],
         url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
         name: 'Megavid',
+        langs: ['sub', 'dub'],
         url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
+    },
+    {
+        name: 'VidNest',
+        langs: ['sub', 'dub', 'hindi'],
+        url: (id, ep, lang) => `https://vidnest.fun/anime/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
         name: 'HiAnime',
@@ -224,6 +234,49 @@ const ANIME_SERVERS = [
         external: true
     }
 ];
+
+// Audio versions offered in the anime modal, labelled for what they really are.
+const ANIME_AUDIO_OPTIONS = [
+    { value: 'sub', label: 'Subtitled (original audio)' },
+    { value: 'dub', label: 'Dubbed (English / other)' },
+    { value: 'hindi', label: 'Hindi Dub' }
+];
+
+const ANIME_AUDIO_LABELS = {
+    sub: 'subtitles',
+    dub: 'the English/other dub',
+    hindi: 'the Hindi dub'
+};
+
+// Providers only carry the versions they document — fall back honestly.
+function animeLangFor(server, requested) {
+    const supported = server.langs || ['sub', 'dub'];
+    if (supported.includes(requested)) return { used: requested, coerced: false };
+    return { used: 'dub', coerced: true };
+}
+
+function renderAnimeHint(server, requested) {
+    const hint = document.getElementById('playerHint');
+    if (!hint || !server) return;
+
+    hint.style.display = 'flex';
+    const picked = animeLangFor(server, requested);
+    const want = ANIME_AUDIO_LABELS[requested] || requested;
+    const got = ANIME_AUDIO_LABELS[picked.used] || picked.used;
+
+    if (picked.coerced) {
+        hint.className = 'player-hint';
+        hint.innerHTML =
+            '<i class="fas fa-circle-info"></i><span><strong>' + server.name +
+            '</strong> does not carry ' + want + ' — playing <strong>' + got +
+            '</strong> instead. Pick VidNest for a Hindi dub.</span>';
+    } else {
+        hint.className = 'player-hint supports-audio';
+        hint.innerHTML =
+            '<i class="fas fa-volume-high"></i><span><strong>' + server.name +
+            '</strong> is playing <strong>' + got + '</strong>.</span>';
+    }
+}
 
 let currentAnimeSort = 'trending';
 let currentAnimePage = 1;
@@ -385,9 +438,13 @@ function openAnimeStream(item) {
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
 
-    // Hide movie/TV server tabs, show anime server tabs
+    // Hide movie/TV server tabs, show anime server tabs. The movie language
+    // dropdown has no effect on anime servers, so hide it — the audio selector
+    // below is the real control.
     document.querySelector('.server-tabs').style.display = 'none';
     document.getElementById('animeServerTabs').style.display = 'flex';
+    const movieLangSelect = document.getElementById('languageSelect');
+    if (movieLangSelect) movieLangSelect.style.display = 'none';
 
     // Show episode selector for anime
     const seasonContainer = document.getElementById('seasonSelectContainer');
@@ -399,12 +456,12 @@ function openAnimeStream(item) {
     if (seasonLabel) seasonLabel.textContent = 'Audio:';
     if (episodeLabel) episodeLabel.textContent = 'Episode:';
 
-    // Language selector
+    // Audio version selector — labelled for what the providers really serve
     seasonSelect.innerHTML = '';
-    ['sub', 'dub'].forEach(lang => {
+    ANIME_AUDIO_OPTIONS.forEach(audioOption => {
         const opt = document.createElement('option');
-        opt.value = lang;
-        opt.textContent = lang === 'sub' ? 'Subtitled' : 'Hindi Dubbed';
+        opt.value = audioOption.value;
+        opt.textContent = audioOption.label;
         seasonSelect.appendChild(opt);
     });
     seasonSelect.value = 'dub';
@@ -440,6 +497,12 @@ function loadAnimeServer(index) {
     if (!animeId) return;
 
     const server = ANIME_SERVERS[index];
+    if (!server) return;
+
+    // Providers only carry the versions they document, so resolve before loading
+    const picked = animeLangFor(server, currentAnimeLang);
+    renderAnimeHint(server, currentAnimeLang);
+
     if (server.external) {
         // Open in new tab instead of iframe
         window.open(server.url(animeId, currentAnimeEpisode, currentAnimeLang), '_blank');
@@ -449,8 +512,8 @@ function loadAnimeServer(index) {
             tab.classList.toggle('active', i === prevIndex);
         });
         return;
-    }
-    frame.src = server.url(animeId, currentAnimeEpisode, currentAnimeLang);
+    }        frame.src = server.url(animeId, currentAnimeEpisode, picked.used);
+    renderDownloadSources('anime');
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
 
@@ -766,66 +829,225 @@ const genres = [
     { "id": 37, "name": "Western" }
 ];
 
+/* --------------------------------------------------------------------------
+   Audio / subtitle language support.
+   Verified 2026-09-27 against each provider's own published documentation.
+   Only a server that genuinely documents a language parameter gets one sent;
+   everything else is marked NONE so we never pass a query param that the
+   embedded player silently ignores.
+
+     AUDIO    - the player uses it to choose the AUDIO TRACK
+     SUBTITLE - the player uses it to choose the SUBTITLE track only
+     NONE     - no documented language parameter
+
+   Evidence:
+     vixsrc.to      "lang - Sets preferred language for the audio track"
+     yapgrid.com    "lang - Default subtitle language code (e.g. en, es, fr)"
+     vidlink.pro    full parameter list published; no language parameter
+     vidphantom.com full parameter list published; subtitles are sub_file/sub_lang only
+     vidnest.fun    movie/TV params are startAt, progress, server, hide-controls only
+     vidsrc.to      no parameter; FAQ: library is English-first, subtitles included
+     2embed.cc      no parameter documented
+     multiembed.mov, embedmaster.link, embed.su, player.videasy.net
+                    no reachable documentation -> treated as none
+   -------------------------------------------------------------------------- */
+const LANG_MODE = { AUDIO: 'audio', SUBTITLE: 'subtitle', NONE: 'none' };
+
+const LANGUAGE_LABELS = {
+    hi: 'Hindi', en: 'English', ta: 'Tamil', te: 'Telugu', ml: 'Malayalam',
+    kn: 'Kannada', bn: 'Bengali', ur: 'Urdu', ko: 'Korean', ja: 'Japanese',
+    es: 'Spanish', fr: 'French'
+};
+
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
         name: 'VidNest',
         movie: (id) => `https://vidnest.fun/movie/${id}`,
-        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'EmbedMaster',
         movie: (id) => `https://embedmaster.link/movie/${id}`,
-        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'YapGrid',
         movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
-        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.SUBTITLE
     },
     {
         name: 'VidLink',
         movie: (id) => `https://vidlink.pro/movie/${id}`,
-        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'VidPhantom',
         movie: (id) => `https://vidphantom.com/movie/${id}`,
-        tv: (id, s, e) => `https://vidphantom.com/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://vidphantom.com/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: '2Embed',
         movie: (id) => `https://2embed.skin/embed/${id}`,
-        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`
+        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'MultiEmbed',
         movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`
+        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'VidSrc',
         movie: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
-        tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`
+        tv: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'Embed.su',
         movie: (id) => `https://embed.su/embed/movie/${id}`,
-        tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     },
     {
         name: 'VixSrc',
         // Player includes a built-in Download button where the source provides one
         movie: (id) => `https://vixsrc.to/movie/${id}`,
-        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`
+        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
+        // Documented: "lang - Sets preferred language for the audio track"
+        langMode: LANG_MODE.AUDIO
     },
     {
         name: 'Videasy',
         // Quality selector up to 1080p; themed to app accent
         movie: (id) => `https://player.videasy.net/movie/${id}?color=E11D48`,
-        tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}?color=E11D48`
+        tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}?color=E11D48`,
+        langMode: LANG_MODE.NONE
     }
 ];
+
+function serverLangMode(server) {
+    return (server && server.langMode) || LANG_MODE.NONE;
+}
+
+// Build the embed URL, appending a language param only for players that read it.
+function buildStreamUrl(server, item, lang) {
+    const url = item.media_type === 'tv'
+        ? server.tv(item.id, currentSeason, currentEpisode)
+        : server.movie(item.id);
+
+    if (!url || serverLangMode(server) === LANG_MODE.NONE) return url;
+
+    return url + (url.includes('?') ? '&' : '?') + 'lang=' + encodeURIComponent(lang);
+}
+
+// Tell the user exactly what the selected server does with their language choice.
+function renderPlayerHint(server, lang) {
+    const hint = document.getElementById('playerHint');
+    if (!hint || !server) return;
+
+    hint.style.display = 'flex';
+    const label = LANGUAGE_LABELS[lang] || lang;
+    const mode = serverLangMode(server);
+
+    if (mode === LANG_MODE.AUDIO) {
+        hint.className = 'player-hint supports-audio';
+        hint.innerHTML =
+            '<i class="fas fa-volume-high"></i><span><strong>' + server.name +
+            '</strong> chooses the audio track itself — requesting <strong>' + label +
+            ' audio</strong>.</span>';
+    } else if (mode === LANG_MODE.SUBTITLE) {
+        hint.className = 'player-hint supports-subtitle';
+        hint.innerHTML =
+            '<i class="fas fa-closed-captioning"></i><span><strong>' + server.name +
+            '</strong> reads the language for <strong>subtitles</strong> only — requesting ' + label +
+            ' subtitles. The audio stays whatever this server carries.</span>';
+    } else {
+        hint.className = 'player-hint';
+        hint.innerHTML =
+            '<i class="fas fa-circle-info"></i><span><strong>' + server.name +
+            '</strong> ignores language requests. Open its own <strong>settings / audio</strong> menu and pick ' +
+            label + ' there — if this title has a ' + label + ' track at all.</span>';
+    }
+}
+
+// Small flag on a server tab so the ones that really honour the selector stand out.
+function annotateServerTab(tab, server) {
+    const mode = serverLangMode(server);
+    const langs = server.langs || [];
+
+    if (mode === LANG_MODE.AUDIO) {
+        tab.title = server.name + ': honours the language selector for audio tracks';
+        tab.appendChild(makeTabFlag('audio', 'AUDIO'));
+    } else if (mode === LANG_MODE.SUBTITLE) {
+        tab.title = server.name + ': honours the language selector for subtitles';
+        tab.appendChild(makeTabFlag('subtitle', 'SUBS'));
+    } else if (langs.includes('hindi')) {
+        tab.title = server.name + ': offers a Hindi dub';
+        tab.appendChild(makeTabFlag('audio', 'HINDI'));
+    } else {
+        tab.title = server.name + ': pick the audio track inside the player';
+    }
+}
+
+function makeTabFlag(kind, text) {
+    const flag = document.createElement('span');
+    flag.className = 'tab-flag ' + kind;
+    flag.textContent = text;
+    return flag;
+}
+
+/* --- Hindi dual-audio download sources -----------------------------------
+   External index sites that carry Hindi (dual-audio) download releases.
+   mode 'search'  - the site's native search is verified working
+   mode 'google'  - open a Google site-restricted search, which always lands
+                    on the exact title page even when a site's own search is
+                    unreliable. The user picks the release there.
+   kind gates which modal shows the source: movie / tv / anime.
+   -------------------------------------------------------------------------- */
+const DOWNLOAD_SOURCES = [
+    { name: '4KHDHub',    mode: 'search', url: q => `https://4khdhub.one/?s=${encodeURIComponent(q)}`, kinds: ['movie', 'tv', 'anime'], note: '4K/1080p dual audio' },
+    { name: 'HDHub4u',    mode: 'google', site: 'new6.hdhub4u.cl',     kinds: ['movie', 'tv'], note: 'Hindi dubs' },
+    { name: 'KatMovieHD', mode: 'google', site: 'new.katmoviehd.top',  kinds: ['movie', 'tv'], note: 'Dual audio' },
+    { name: 'MoviesBaba', mode: 'google', site: 'moviesbaba.lol',      kinds: ['movie', 'tv'], note: 'Hindi movies' },
+    { name: 'KatDrama',   mode: 'google', site: 'new.katdrama.my',     kinds: ['tv'],          note: 'K/C-dramas' },
+    { name: 'PikaHD',     mode: 'google', site: 'new.pikahd.co',       kinds: ['anime'],       note: 'Hindi anime' },
+    { name: 'AnimeWorld', mode: 'google', site: 'watchanimeworld.one', kinds: ['anime'],       note: 'Anime streams' }
+];
+
+function renderDownloadSources(kind) {
+    const wrap = document.getElementById('downloadSources');
+    if (!wrap || !currentStreamItem) return;
+
+    const item = currentStreamItem;
+    const title = item.title || item.name || '';
+    const year = (item.release_date || item.first_air_date || item.year || '').slice(0, 4);
+    const query = [title, year].filter(Boolean).join(' ') + ' hindi';
+
+    const links = DOWNLOAD_SOURCES
+        .filter(src => src.kinds.includes(kind))
+        .map(src => {
+            const href = src.mode === 'search'
+                ? src.url(query)
+                : 'https://www.google.com/search?q=' + encodeURIComponent('site:' + src.site + ' ' + query);
+            return '<a class="dl-source" href="' + href + '" target="_blank" rel="noopener" '
+                + 'title="' + src.note + ' — opens ' + src.name + ' in a new tab">'
+                + '<i class="fas fa-download"></i>' + src.name + '</a>';
+        });
+
+    if (!links.length) { wrap.style.display = 'none'; return; }
+
+    wrap.innerHTML =
+        '<span class="dl-source-label"><i class="fas fa-language"></i>Hindi audio downloads:</span>'
+        + links.join('');
+    wrap.style.display = 'flex';
+}
 
 // State management
 let currentStreamItem = null;
@@ -858,6 +1080,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
 
     loadThemePreference();
     setupHeaderControls();
+    setupSideMenu();
     setupNavigation();
 
     // Genre hub delegation (setGenre('X') onclicks were removed; buttons use data-genre)
@@ -991,12 +1214,19 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         }
     });
 
-    // Server tab clicks
-    document.querySelectorAll('.server-tab').forEach(tab => {
+    // Server tab clicks — annotate first so the flags reflect the metadata above
+    document.querySelectorAll('.server-tab').forEach((tab, i) => {
+        const server = STREAMING_SERVERS[i];
+        if (server) annotateServerTab(tab, server);
         tab.addEventListener('click', () => {
-            const serverIndex = parseInt(tab.dataset.server);
-            loadServer(serverIndex);
+            const serverIndex = parseInt(tab.dataset.server, 10);
+            loadServer(isNaN(serverIndex) ? i : serverIndex);
         });
+    });
+
+    document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
+        const server = ANIME_SERVERS[i];
+        if (server) annotateServerTab(tab, server);
     });
 
     // Language selector — reload player with preferred audio language
@@ -1708,6 +1938,51 @@ function setupHeaderControls() {
     }
 }
 
+// Side menu: fixed sidebar on desktop, slide-in drawer on small screens
+function setupSideMenu() {
+    const sideMenu = document.getElementById('sideMenu');
+    const toggle = document.getElementById('menuToggle');
+    if (!sideMenu || !toggle) return;
+
+    const closeBtn = document.getElementById('sideClose');
+    const backdrop = document.getElementById('sideBackdrop');
+    const isOpen = () => document.body.classList.contains('menu-open');
+
+    const setOpen = (open) => {
+        document.body.classList.toggle('menu-open', open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+
+    toggle.addEventListener('click', () => setOpen(!isOpen()));
+    if (closeBtn) closeBtn.addEventListener('click', () => setOpen(false));
+    if (backdrop) backdrop.addEventListener('click', () => setOpen(false));
+
+    // Picking anything in the menu on the drawer layout closes it again
+    sideMenu.addEventListener('click', (e) => {
+        const link = e.target.closest('.nav-link, .side-github, .side-brand');
+        if (!link || !isOpen()) return;
+        setOpen(false);
+        if (link.classList.contains('nav-link')) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen()) setOpen(false);
+    });
+
+    // Leaving the drawer layout (resize / rotate) resets the open state
+    const drawerLayout = window.matchMedia('(max-width: 1024px)');
+    const onLayoutChange = (e) => {
+        if (!e.matches) setOpen(false);
+    };
+    if (drawerLayout.addEventListener) {
+        drawerLayout.addEventListener('change', onLayoutChange);
+    } else if (drawerLayout.addListener) {
+        drawerLayout.addListener(onLayoutChange);
+    }
+}
+
 // Watch History functionality
 async function addToHistory(item) {
     // Use the item's real media type (anime/movie/tv) — not the movie/TV page switch
@@ -1880,9 +2155,19 @@ function openStream(item, mediaType) {
     // Prefer Hindi dubbed audio by default
     langSelect.value = 'hi';
 
+    // The movie/TV language selector is meaningless for anime, which uses the
+    // audio selector below — put it back for regular titles.
+    langSelect.style.display = '';
+
     // Handle TV show season/episode selection
     if (item.media_type === 'tv') {
-        document.getElementById('seasonSelectContainer').style.display = 'flex';
+        const seasonContainer = document.getElementById('seasonSelectContainer');
+        // openAnimeStream relabels these for anime — restore them here
+        const seasonLabel = seasonContainer.querySelector('label[for="seasonSelect"]');
+        const episodeLabel = seasonContainer.querySelector('label[for="episodeSelect"]');
+        if (seasonLabel) seasonLabel.textContent = 'Season:';
+        if (episodeLabel) episodeLabel.textContent = 'Episode:';
+        seasonContainer.style.display = 'flex';
         loadSeasonEpisode(item.id);
     } else {
         document.getElementById('seasonSelectContainer').style.display = 'none';
@@ -1961,21 +2246,15 @@ function loadServer(index) {
     const errorMsg = document.getElementById('serverError');
     if (!currentStreamItem) return;
 
+    const server = STREAMING_SERVERS[index];
+    if (!server) return;
+
     const langSelect = document.getElementById('languageSelect');
-    const audioLang = (langSelect && langSelect.value) || 'hi';
+    const preferredLang = (langSelect && langSelect.value) || 'hi';
 
-    let url;
-    if (currentStreamItem.media_type === 'tv') {
-        url = STREAMING_SERVERS[index].tv(currentStreamItem.id, currentSeason, currentEpisode);
-    } else {
-        url = STREAMING_SERVERS[index].movie(currentStreamItem.id);
-    }
-
-    if (url) {
-        url += (url.includes('?') ? '&' : '?') + 'lang=' + encodeURIComponent(audioLang);
-    }
-
-    frame.src = url;
+    frame.src = buildStreamUrl(server, currentStreamItem, preferredLang);
+    renderPlayerHint(server, preferredLang);
+    renderDownloadSources(currentStreamItem.media_type === 'anime' ? 'anime' : (currentStreamItem.media_type === 'tv' ? 'tv' : 'movie'));
     errorMsg.style.display = 'none';
     frame.style.display = 'block';
 
@@ -2063,9 +2342,15 @@ function closeStream() {
     trailerBtn.textContent = 'Watch Trailer';
     errorMsg.style.display = 'none';
     seasonContainer.style.display = 'none';
+    const hint = document.getElementById('playerHint');
+    if (hint) hint.style.display = 'none';
+    const dlSources = document.getElementById('downloadSources');
+    if (dlSources) dlSources.style.display = 'none';
     // Reset to movie/TV tabs
     if (movieTabs) movieTabs.style.display = 'flex';
     if (animeTabs) animeTabs.style.display = 'none';
+    const langSelect = document.getElementById('languageSelect');
+    if (langSelect) langSelect.style.display = '';
     document.body.style.overflow = '';
 }
 
