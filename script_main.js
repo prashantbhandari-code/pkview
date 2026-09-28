@@ -428,7 +428,13 @@ let currentAnimeLang = 'dub';
 function openAnimeStream(item) {
     addToHistory(item);
     currentStreamItem = item;
-    currentServerIndex = 0;
+    // External anime servers open a new tab instead of the iframe, so never
+    // restore them as the active embed — they would leave a blank player.
+    currentServerIndex = recallServer(
+        ANIME_SERVERS.length,
+        LAST_ANIME_SERVER_KEY,
+        (i) => !ANIME_SERVERS[i].external
+    );
     currentAnimeEpisode = 1;
     currentAnimeTotalEpisodes = item.episodes || 12;
     currentAnimeLang = 'dub';
@@ -485,7 +491,7 @@ function openAnimeStream(item) {
         loadAnimeServer(currentServerIndex);
     };
 
-    loadAnimeServer(0);
+    loadAnimeServer(currentServerIndex);
     loadTrailer(item);
 }
 
@@ -538,6 +544,11 @@ function loadAnimeServer(index) {
 }
 
 function switchAnimeServer(index) {
+    // External servers open a new tab and never become the active embed,
+    // so don't store them as the last-used server.
+    if (ANIME_SERVERS[index] && !ANIME_SERVERS[index].external) {
+        rememberServer(index, LAST_ANIME_SERVER_KEY);
+    }
     loadAnimeServer(index);
 }
 
@@ -862,6 +873,16 @@ const LANGUAGE_LABELS = {
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
+        name: 'VixSrc',
+        // Player includes a built-in Download button where the source provides one
+        movie: (id) => `https://vixsrc.to/movie/${id}`,
+        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
+        // Documented: "lang - Sets preferred language for the audio track".
+        // Listed first because it is the only server that honours the
+        // language selector for audio.
+        langMode: LANG_MODE.AUDIO
+    },
+    {
         name: 'VidNest',
         movie: (id) => `https://vidnest.fun/movie/${id}`,
         tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
@@ -916,14 +937,6 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'VixSrc',
-        // Player includes a built-in Download button where the source provides one
-        movie: (id) => `https://vixsrc.to/movie/${id}`,
-        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
-        // Documented: "lang - Sets preferred language for the audio track"
-        langMode: LANG_MODE.AUDIO
-    },
-    {
         name: 'Videasy',
         // Quality selector up to 1080p; themed to app accent
         movie: (id) => `https://player.videasy.net/movie/${id}?color=E11D48`,
@@ -975,6 +988,24 @@ function renderPlayerHint(server, lang) {
             '</strong> ignores language requests. Open its own <strong>settings / audio</strong> menu and pick ' +
             label + ' there — if this title has a ' + label + ' track at all.</span>';
     }
+}
+
+// Remember the last server the user played so the next title opens on it.
+const LAST_SERVER_KEY = 'pkview_last_server';
+const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server';
+
+function rememberServer(index, key = LAST_SERVER_KEY) {
+    try { localStorage.setItem(key, String(index)); } catch (e) { /* storage unavailable */ }
+}
+
+function recallServer(count, key = LAST_SERVER_KEY, isValid) {
+    try {
+        const saved = parseInt(localStorage.getItem(key), 10);
+        if (!isNaN(saved) && saved >= 0 && saved < count && (!isValid || isValid(saved))) {
+            return saved;
+        }
+    } catch (e) { /* storage unavailable */ }
+    return 0;
 }
 
 // Small flag on a server tab so the ones that really honour the selector stand out.
@@ -1219,8 +1250,9 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         const server = STREAMING_SERVERS[i];
         if (server) annotateServerTab(tab, server);
         tab.addEventListener('click', () => {
-            const serverIndex = parseInt(tab.dataset.server, 10);
-            loadServer(isNaN(serverIndex) ? i : serverIndex);
+            const serverIndex = isNaN(parseInt(tab.dataset.server, 10)) ? i : parseInt(tab.dataset.server, 10);
+            rememberServer(serverIndex);
+            loadServer(serverIndex);
         });
     });
 
@@ -2143,11 +2175,12 @@ function openStream(item, mediaType) {
 
     currentStreamItem = item;
     if (mediaType) currentStreamItem.media_type = mediaType;
-    currentServerIndex = 0;
+    // Open on the server the user last played (falls back to VixSrc, the only
+    // server that honours the language selector for audio).
+    currentServerIndex = recallServer(STREAMING_SERVERS.length);
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
     const langSelect = document.getElementById('languageSelect');
-
     title.textContent = item.title || item.name;
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
@@ -2173,7 +2206,7 @@ function openStream(item, mediaType) {
         document.getElementById('seasonSelectContainer').style.display = 'none';
     }
 
-    loadServer(0);
+    loadServer(currentServerIndex);
     loadTrailer(item);
 }
 
