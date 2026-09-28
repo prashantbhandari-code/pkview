@@ -1036,20 +1036,25 @@ function makeTabFlag(kind, text) {
 
 /* --- Hindi dual-audio download sources -----------------------------------
    External index sites that carry Hindi (dual-audio) download releases.
-   mode 'search'  - the site's native search is verified working
-   mode 'google'  - open a Google site-restricted search, which always lands
-                    on the exact title page even when a site's own search is
-                    unreliable. The user picks the release there.
+
+   mode 'search'  - the site's native search is verified working, so link
+                    straight to its results page.
+   mode 'google'  - these sites get DMCA-deindexed and rotate domains often
+                    (their own ?s= searches are frequently broken — verified
+                    against each one), so open a Google search for the site
+                    BRAND + the title. Google surfaces the site's current
+                    live domain; the user picks the release there.
+
    kind gates which modal shows the source: movie / tv / anime.
    -------------------------------------------------------------------------- */
 const DOWNLOAD_SOURCES = [
     { name: '4KHDHub',    mode: 'search', url: q => `https://4khdhub.one/?s=${encodeURIComponent(q)}`, kinds: ['movie', 'tv', 'anime'], note: '4K/1080p dual audio' },
-    { name: 'HDHub4u',    mode: 'google', site: 'new6.hdhub4u.cl',     kinds: ['movie', 'tv'], note: 'Hindi dubs' },
-    { name: 'KatMovieHD', mode: 'google', site: 'new.katmoviehd.top',  kinds: ['movie', 'tv'], note: 'Dual audio' },
-    { name: 'MoviesBaba', mode: 'google', site: 'moviesbaba.lol',      kinds: ['movie', 'tv'], note: 'Hindi movies' },
-    { name: 'KatDrama',   mode: 'google', site: 'new.katdrama.my',     kinds: ['tv'],          note: 'K/C-dramas' },
-    { name: 'PikaHD',     mode: 'google', site: 'new.pikahd.co',       kinds: ['anime'],       note: 'Hindi anime' },
-    { name: 'AnimeWorld', mode: 'google', site: 'watchanimeworld.one', kinds: ['anime'],       note: 'Anime streams' }
+    { name: 'HDHub4u',    mode: 'google', brand: 'hdhub4u',    kinds: ['movie', 'tv'], note: 'Hindi dubs' },
+    { name: 'KatMovieHD', mode: 'google', brand: 'katmoviehd', kinds: ['movie', 'tv'], note: 'Dual audio' },
+    { name: 'MoviesBaba', mode: 'google', brand: 'moviesbaba', kinds: ['movie', 'tv'], note: 'Hindi movies' },
+    { name: 'KatDrama',   mode: 'google', brand: 'katdrama',   kinds: ['tv'],          note: 'K/C-dramas' },
+    { name: 'PikaHD',     mode: 'google', brand: 'pikahd',     kinds: ['anime'],       note: 'Hindi anime' },
+    { name: 'AnimeWorld', mode: 'google', brand: 'animeworld', kinds: ['anime'],       note: 'Anime streams' }
 ];
 
 function renderDownloadSources(kind) {
@@ -1066,7 +1071,7 @@ function renderDownloadSources(kind) {
         .map(src => {
             const href = src.mode === 'search'
                 ? src.url(query)
-                : 'https://www.google.com/search?q=' + encodeURIComponent('site:' + src.site + ' ' + query);
+                : 'https://www.google.com/search?q=' + encodeURIComponent(src.brand + ' ' + query);
             return '<a class="dl-source" href="' + href + '" target="_blank" rel="noopener" '
                 + 'title="' + src.note + ' — opens ' + src.name + ' in a new tab">'
                 + '<i class="fas fa-download"></i>' + src.name + '</a>';
