@@ -764,6 +764,45 @@ const genres = [
     { "id": 37, "name": "Western" }
 ];
 
+// External streaming sources (per architecture: fetch links from these, then serve)
+const LINK_SOURCES = [
+  { name: "pkview", movie: (id) => `https://pkview.example/api/movie/${id}`, tv: (id,s,e) => `https://pkview.example/api/tv/${id}/${s}/${e}` },
+  { name: "cinejoy.pk", movie: (id) => `https://cinejoy.pk/api/movie/${id}`, tv: (id,s,e) => `https://cinejoy.pk/api/tv/${id}/${s}/${e}` },
+  { name: "animesalt.cx", movie: (id) => `https://animesalt.cx/api/movie/${id}`, tv: (id,s,e) => `https://animesalt.cx/api/tv/${id}/${s}/${e}` },
+  { name: "4khdhub.one", movie: (id) => `https://4khdhub.one/api/movie/${id}`, tv: (id,s,e) => `https://4khdhub.one/api/tv/${id}/${s}/${e}` },
+];
+
+// Show which source is serving the current stream (non-blocking status line)
+function showSourceStatus(text) {
+    const el = document.getElementById('sourceStatus');
+    if (el) el.textContent = text;
+}
+
+// Fetch streaming + download links from external sources. Falls back to null
+// (caller then uses the hardcoded STREAMING_SERVERS). Never throws.
+async function fetchLinks(item) {
+  if (!item || !item.id) return null;
+  const isTv = item.media_type === "tv";
+  for (const src of LINK_SOURCES) {
+    try {
+      const url = isTv ? src.tv(item.id, item.season || 1, item.episode || 1) : src.movie(item.id);
+      const res = await fetchWithTimeout(url, {}, 4000);
+      if (!res || !res.ok) continue;
+      const data = await res.json();
+      if (data && (data.streamUrl || data.stream || data.embed)) {
+        return {
+          streamUrl: data.streamUrl || data.stream || data.embed,
+          downloadUrl: data.downloadUrl || data.download || null,
+          source: src.name
+        };
+      }
+    } catch (e) {
+      // Source unreachable — try the next one
+    }
+  }
+  return null;
+}
+
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
@@ -1852,7 +1891,20 @@ function openStream(item, mediaType) {
         document.getElementById('seasonSelectContainer').style.display = 'none';
     }
 
-    loadServer(0);
+    // Fetch streaming/download links from external sources (non-blocking).
+    // Falls back to hardcoded servers when sources are unreachable.
+    fetchLinks(item).then(fetched => {
+        if (fetched) {
+            currentStreamItem._fetched = fetched;
+            showSourceStatus('Using source: ' + fetched.source);
+        } else {
+            showSourceStatus('Source unavailable — using fallback servers');
+        }
+        loadServer(currentServerIndex);
+    }).catch(() => {
+        showSourceStatus('Source unavailable — using fallback servers');
+        loadServer(currentServerIndex);
+    });
     loadTrailer(item);
 }
 
@@ -1928,8 +1980,11 @@ function loadServer(index) {
     const langSelect = document.getElementById('languageSelect');
     const audioLang = (langSelect && langSelect.value) || 'hi';
 
+    // Prefer a link fetched from the external sources; fall back to hardcoded servers.
     let url;
-    if (currentStreamItem.media_type === 'tv') {
+    if (currentStreamItem._fetched && currentStreamItem._fetched.streamUrl) {
+        url = currentStreamItem._fetched.streamUrl;
+    } else if (currentStreamItem.media_type === 'tv') {
         url = STREAMING_SERVERS[index].tv(currentStreamItem.id, currentSeason, currentEpisode);
     } else {
         url = STREAMING_SERVERS[index].movie(currentStreamItem.id);
@@ -1953,6 +2008,11 @@ function loadServer(index) {
 function openDownload() {
     if (!currentStreamItem) return;
     const id = currentStreamItem.id;
+    // Prefer a download link fetched from the external sources
+    if (currentStreamItem._fetched && currentStreamItem._fetched.downloadUrl) {
+        window.open(currentStreamItem._fetched.downloadUrl, '_blank', 'noopener');
+        return;
+    }
     let url;
     if (currentStreamItem.media_type === 'tv') {
         url = `https://player.videasy.net/tv/${id}/${currentSeason}/${currentEpisode}?color=E11D48&download=true`;
