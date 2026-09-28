@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="PKVIEW - Stream movies, TV shows, anime, Bollywood, Nepali films, Korean dramas, and live sports for free."
+      content="Cinejoy - Stream movies, TV shows, anime, Bollywood, Nepali films, Korean dramas, and live sports for free."
     />
-    <meta name="theme-color" content="#1a1a2e" />
-    <meta property="og:title" content="PKVIEW - Free Streaming" />
+    <meta name="theme-color" content="#04120b" />
+    <meta property="og:title" content="Cinejoy - Free Streaming" />
     <meta
       property="og:description"
       content="Movies, TV shows, anime, Bollywood, Nepali films, Korean dramas, web series & live sports."
@@ -24,7 +24,7 @@
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
     <link rel="stylesheet" href="style.css" />
-    <title>PKVIEW - Free Movie & TV Streaming</title>
+    <title>Cinejoy - Free Movie & TV Streaming</title>
   </head>
 
   <body>
@@ -34,61 +34,48 @@
     </div>
 
     <header class="header">
-      <div class="container">
-        <div class="header-row">
-          <a href="index.html" class="brand">
-            <span class="brand-icon">
-              <i class="fas fa-film"></i>
-            </span>
-            <span class="brand-text">PKVIEW</span>
-          </a>
+      <div class="header-row">
+        <a href="index.html" class="brand">
+          <span class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 17l5-3 4 3 8-8"></path><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="8" r="1.5"></circle><circle cx="19" cy="5" r="1.5"></circle></svg>
+          </span>
+          <span class="brand-text">Cinejoy</span>
+        </a>
 
-          <form id="form" class="search-form" role="search">
-            <div class="search-wrapper">
-              <i class="fas fa-search search-icon"></i>
-              <input
-                type="text"
-                id="search"
-                class="search"
-                placeholder="Search movies, shows, anime..."
-              />
-            </div>
-          </form>
+        <nav class="nav">
+          <button class="nav-link active" data-section="home">Home</button>
+          <button class="nav-link" data-section="bollywood">Movies</button>
+          <button class="nav-link" data-section="webseries">Shows</button>
+          <button class="nav-link" data-section="favoritesSection">My List</button>
+        </nav>
 
-          <div class="header-actions">
-            <div class="pageChange" title="Switch Movies / TV Shows">
-              <svg
-                class="switch"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="#7378c5"
-                fill="none"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path
-                  d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z"
-                ></path>
-                <path d="M7 20l10 0"></path>
-                <path d="M9 16l0 4"></path>
-                <path d="M15 16l0 4"></path>
-              </svg>
-            </div>
-            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
-              <i class="fas fa-sun"></i>
-              <i class="fas fa-moon"></i>
-            </button>
-            <a
-              href="https://github.com/prashantbhandari-code/pkview"
-              target="_blank"
-              rel="noopener"
-              class="github-link"
-            >
-              <i class="fab fa-github"></i>
-            </a>
+        <form id="form" class="search-form" role="search">
+          <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search" class="search" placeholder="Search movies, shows, anime..." />
           </div>
+        </form>
+
+        <div class="header-actions">
+          <button class="icon-btn" id="settingsBtn" title="Settings">
+            <i class="fas fa-sliders-h"></i>
+          </button>
+          <button class="icon-btn" id="avatarBtn" title="Account">
+            <i class="fas fa-user"></i>
+          </button>
+          <div class="pageChange" title="Switch Movies / TV Shows">
+            <svg class="switch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z"></path>
+              <path d="M7 20l10 0"></path>
+              <path d="M9 16l0 4"></path>
+              <path d="M15 16l0 4"></path>
+            </svg>
+          </div>
+          <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+            <i class="fas fa-sun"></i>
+            <i class="fas fa-moon"></i>
+          </button>
         </div>
       </div>
     </header>
@@ -102,18 +89,15 @@
           <span class="hero-badge"><i class="fas fa-fire"></i> Trending Now</span>
           <h1 class="hero-title">Your Season <span class="accent">Awaits</span></h1>
           <p class="hero-sub">
-            Movies, TV shows, anime, Bollywood, Nepali, Korean &amp; live sports —
+            Movies, TV shows, anime, Bollywood, Nepali, Korean & live sports —
             all in one place.
           </p>
           <div class="hero-actions">
-            <button onclick="document.getElementById('search').focus()">
-              <i class="fas fa-search"></i> Search
+            <button class="hero-cta" onclick="document.getElementById('search').focus()">
+              <i class="fas fa-play"></i> Watch Now
             </button>
-            <button
-              class="hero-cta"
-              onclick="document.getElementById('search').focus()"
-            >
-              <i class="fas fa-search"></i> Find Something
+            <button onclick="document.getElementById('search').focus()">
+              <i class="fas fa-info-circle"></i> More Info
             </button>
           </div>
         </div>
@@ -154,6 +138,11 @@
           </button>
         </div>
       </div>
+    </section>
+
+    <!-- Home Spotlight Hero (rotating trending backdrops) -->
+    <section id="homeSpotlight" class="home-spotlight" style="display:none;">
+      <div class="spotlight-container"></div>
     </section>
 
     <!-- Continue Watching -->
@@ -261,7 +250,7 @@
       <div class="container">
         <div class="footer-grid">
           <div class="footer-col">
-            <h3>PKVIEW</h3>
+            <h3>Cinejoy</h3>
             <p class="footer-desc">
               Free streaming for movies, TV shows, anime, Bollywood, Nepali films,
               Korean dramas &amp; live sports.
@@ -321,7 +310,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; <span id="copyright-year"></span> PKVIEW. All rights reserved.</p>
+          <p>&copy; <span id="copyright-year"></span> Cinejoy. All rights reserved.</p>
         </div>
       </div>
     </footer>

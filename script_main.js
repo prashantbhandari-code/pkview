@@ -1031,11 +1031,13 @@ function topFunction() {
 
 
 function setupNavigation() {
+    // Cinejoy nav bar (Home / Movies / Shows / My List)
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             const section = link.dataset.section;
+            if (section === 'favoritesSection') { showFavorites(); return; }
             switchSection(section);
         });
     });
@@ -1055,6 +1057,14 @@ function setupNavigation() {
             // Let the default link behavior work (opens YouTube)
         });
     });
+}
+
+function showFavorites() {
+    const sec = document.getElementById('favoritesSection');
+    if (!sec) return;
+    loadFavorites();
+    sec.style.display = 'block';
+    sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function switchSection(section) {
@@ -1572,7 +1582,7 @@ let _spotTimer = null, _spotIdx = 0;
 let _spotData = [];
 
 async function loadHomeSpotlight() {
-    const el = document.getElementById('homeHero');
+    const el = document.getElementById('homeSpotlight');
     if (!el) return;
     try {
         if (!_spotData.length) {
@@ -1595,7 +1605,7 @@ async function loadHomeSpotlight() {
 }
 
 function hideHomeSpotlight() {
-    const el = document.getElementById('homeHero');
+    const el = document.getElementById('homeSpotlight');
     if (el) el.style.display = 'none';
     if (_spotTimer) {
         clearInterval(_spotTimer);
