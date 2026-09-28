@@ -429,12 +429,20 @@ body::-webkit-scrollbar-track {
 .stream-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
   padding: 18px 22px;
   background: var(--muted-surface);
   border-bottom: 1px solid var(--border);
   position: relative;
   gap: 16px;
+}
+.source-status {
+  font-size: 0.78rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  margin-top: 4px;
 }
 .stream-header::after {
   content: '';
