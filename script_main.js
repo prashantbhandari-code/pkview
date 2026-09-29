@@ -1278,6 +1278,11 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     loadHomeSpotlight();
     loadWatchHistory();
     loadFavorites();
+    setupPillNav();
+    relocateGenreHub();
+    wireFilters();
+    loadHomeRows();
+    applyPageChrome(currentSection);
 
     // Expose pagination elements globally so LoadMovieOrTv can access them
     window.prevBtn = document.getElementById("prev");
@@ -1520,7 +1525,17 @@ function switchSection(section) {
         currentSection = 'sports';
         loadSportsContent();
         loadLiveSports();
+    } else if (section === 'movies' || section === 'shows') {
+        currentSection = section;
+        localStorage.setItem('page', section === 'movies' ? 'movie' : 'tv');
+        LoadDataAndDisplay();
+    } else if (section === 'mylist') {
+        currentSection = 'mylist';
+        loadFavorites();
     }
+
+    updateSectionLabel(section);
+    applyPageChrome(section);
 }
 
 const manageIcons = () => {
@@ -1652,6 +1667,8 @@ async function LoadMovieOrTv(whichPage, url) {
             prevPage = currentPage - 1;
             totalPages = data.total_pages;
             if (window.currentBtn) window.currentBtn.innerText = currentPage;
+            const countEl = document.querySelector('.section-label .section-count');
+            if (countEl) countEl.textContent = data.results.length + ' titles';
 
             if (currentPage <= 1) {
                 if (window.prevBtn) window.prevBtn.classList.add('disabled');
@@ -1851,6 +1868,13 @@ function searchResultsAndDisplayWrapper(ev) {
     let whichPage = localStorage.getItem('page');
     const searchQuery = ev.target.value;
 
+    // Search results live in the grid — leave My List (which hides it) for them
+    if (searchQuery && currentSection === 'mylist') {
+        currentSection = 'home';
+        updateSectionLabel('home');
+        applyPageChrome('home');
+    }
+
     if (!searchQuery) {
         if (currentSection === 'bollywood') {
             LoadMovieOrTv('movie', BOLLYWOOD_url);
@@ -1868,6 +1892,8 @@ function searchResultsAndDisplayWrapper(ev) {
             LoadMovieOrTv('tv', DOCU_url);
         } else if (currentSection === 'sports') {
             loadSportsContent();
+        } else if (currentSection === 'movies' || currentSection === 'shows') {
+            applyDiscoverFilters();
         } else if (whichPage == 'movie') {
             LoadMovieOrTv(whichPage, API_url);
         } else if (whichPage == 'tv') {
@@ -2017,17 +2043,20 @@ function showSpotSlide(i) {
     const bg = 'https://image.tmdb.org/t/p/w1280' + m.backdrop_path;
     const dots = _spotData.map((_, j) => '<span class="hero-dot ' + (j === i ? 'active' : '') + '" onclick="spotlightGo(' + j + ')"></span>').join('');
     el.innerHTML = `
-        <div class="spotlight-slide" style="background-image:linear-gradient(90deg,rgba(10,14,39,0.94) 0%,rgba(10,14,39,0.6) 45%,rgba(10,14,39,0.15) 100%),url('${bg}')">
+        <div class="spotlight-slide" style="background-image:linear-gradient(0deg,rgba(7,10,24,0.98) 0%,rgba(7,10,24,0.4) 32%,rgba(7,10,24,0) 58%),linear-gradient(90deg,rgba(7,10,24,0.92) 0%,rgba(7,10,24,0.45) 50%,rgba(7,10,24,0.05) 100%),url('${bg}')">
             <div class="spotlight-content">
-                <span class="spotlight-tag">\uD83D\uDD25 Spotlight</span>
                 <h2 class="spotlight-title">${title}</h2>
                 <div class="spotlight-meta">
-                    <span class="spotlight-score">\u2605 ${rating}</span>
-                    ${year ? '<span>\u00b7 ' + year + '</span>' : ''}
-                    ${gnames ? '<span>\u00b7 ' + escapeHtml(gnames) + '</span>' : ''}
+                    <span class="spotlight-score">\u2605 ${rating}/10</span>
+                    ${year ? '<span class="pj-dotsep">\u00b7</span><span>' + year + '</span>' : ''}
+                    ${gnames ? '<span class="pj-dotsep">\u00b7</span><span>' + escapeHtml(gnames) + '</span>' : ''}
                 </div>
-                <p class="spotlight-desc">${desc}...</p>
-                <button class="spotlight-watch" onclick="spotlightWatch(${i})">\u25B6 Watch Now</button>
+                <p class="spotlight-desc" id="spotDesc">${desc}</p>
+                <div class="spotlight-actions">
+                    <button class="pj-play" onclick="spotlightWatch(${i})"><i class="fas fa-play"></i> Play</button>
+                    <button class="pj-round" onclick="spotlightAdd(${i})" title="Add to My List" aria-label="Add to My List"><i class="fas fa-plus"></i></button>
+                    <button class="pj-round" onclick="spotlightInfo()" title="More info" aria-label="More info"><i class="fas fa-circle-info"></i></button>
+                </div>
             </div>
             <div class="spotlight-dots">${dots}</div>
         </div>`;
@@ -2041,6 +2070,348 @@ function spotlightGo(i) {
 function spotlightWatch(i) {
     const m = _spotData[i];
     if (m) openStream({ ...m, media_type: 'movie' }, 'movie');
+}
+
+function spotlightAdd(i) {
+    const m = _spotData[i];
+    if (m) toggleFavorite(m.id, 'movie');
+}
+
+function spotlightInfo() {
+    const d = document.getElementById('spotDesc');
+    if (d) d.classList.toggle('open');
+}
+
+/* --------------------------------------------------------------------------
+   cinejoy-style chrome: floating pill nav, bottom dock, browse pages,
+   home poster rows and the Movies/Shows filter bar.
+   -------------------------------------------------------------------------- */
+const SECTION_LABELS = {
+    home: 'Now Playing', movies: 'Movies', shows: 'TV Shows', mylist: 'My List',
+    bollywood: 'Bollywood', south: 'South Hindi', nepali: 'Nepali', anime: 'Anime',
+    korean: 'Korean', webseries: 'Web Series', docs: 'Documentaries', sports: 'Sports'
+};
+
+function updateSectionLabel(section) {
+    const el = document.querySelector('.section-label .section-title');
+    if (el && SECTION_LABELS[section]) el.textContent = SECTION_LABELS[section];
+}
+
+// Wire the pill nav, dock and "View All" buttons (all carry data-target)
+function setupPillNav() {
+    document.querySelectorAll('[data-target]').forEach(el => {
+        el.addEventListener('click', (e) => {
+            const target = el.dataset.target;
+            if (!target) return;
+            e.preventDefault();
+            if (target === 'search') {
+                const s = document.getElementById('search');
+                if (s) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    s.focus();
+                }
+                return;
+            }
+            if (target === 'theme') {
+                const t = document.getElementById('themeToggle');
+                if (t) t.click();
+                return;
+            }
+            switchSection(target);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    // Dock rides along with the hero, then tucks away once you scroll past it
+    window.addEventListener('scroll', () => {
+        document.body.classList.toggle('dock-hidden', window.scrollY > 420);
+    }, { passive: true });
+}
+
+// Per-section visibility for hero rows, My List, filters and the grid chrome
+function applyPageChrome(section) {
+    const isHome = section === 'home';
+    const isBrowse = section === 'movies' || section === 'shows';
+    const isMyList = section === 'mylist';
+
+    document.body.classList.toggle('on-home', isHome);
+
+    document.querySelectorAll('.pj-row').forEach(r => {
+        r.style.display = (isHome && r.dataset.ready === '1') ? '' : 'none';
+    });
+
+    const cw = document.getElementById('watchHistorySection');
+    const cwGrid = document.getElementById('watchHistoryGrid');
+    if (cw) cw.style.display = (isHome && cwGrid && cwGrid.children.length) ? 'block' : 'none';
+
+    const fav = document.getElementById('favoritesSection');
+    const favGrid = document.getElementById('favoritesGrid');
+    if (fav && favGrid) {
+        if (isMyList) {
+            fav.style.display = 'block';
+            if (!favorites.length) {
+                favGrid.innerHTML = '<div class="empty-state fade-in">'
+                    + '<div style="font-size:2.5rem;margin-bottom:10px;">\u{1F516}</div>'
+                    + '<p style="margin:0 0 6px;">Your list is empty</p>'
+                    + '<small style="color:#888;">Open any title and tap + to save it here</small></div>';
+            }
+        } else {
+            fav.style.display = 'none';
+        }
+    }
+
+    const fb = document.getElementById('filterBar');
+    if (fb) fb.style.display = isBrowse ? 'flex' : 'none';
+
+    const showGrid = !isMyList;
+    const label = document.querySelector('.section-label');
+    const pag = document.querySelector('.pagination');
+    const main = document.getElementById('main');
+    if (label) label.style.display = showGrid ? 'flex' : 'none';
+    if (pag) pag.style.display = showGrid ? 'flex' : 'none';
+    if (main) main.style.display = showGrid ? '' : 'none';
+
+    if (isBrowse) ensureFilterOptions();
+
+    document.querySelectorAll('.pj-navlink, .pj-dock a').forEach(l => {
+        l.classList.toggle('active', l.dataset.target === section);
+    });
+}
+
+// Genre chips belong next to the grid they filter, not above the hero
+function relocateGenreHub() {
+    const hub = document.querySelector('.hub-section.primary');
+    const label = document.querySelector('.section-label');
+    if (!hub || !label) return;
+    const gridWrap = label.closest('.container');
+    if (!gridWrap || !gridWrap.parentNode) return;
+    if (gridWrap.previousElementSibling === hub) return; // already in place
+    gridWrap.parentNode.insertBefore(hub, gridWrap);
+}
+
+/* --- Movies / Shows browse filters -------------------------------------- */
+let _providerList = null;
+
+function ensureFilterOptions() {
+    const g = document.getElementById('fGenre');
+    if (g && g.options.length <= 1) {
+        genres.forEach(gen => {
+            const o = document.createElement('option');
+            o.value = gen.id;
+            o.textContent = gen.name;
+            g.appendChild(o);
+        });
+    }
+    const y = document.getElementById('fYear');
+    if (y && y.options.length <= 1) {
+        const now = new Date().getFullYear();
+        for (let yy = now; yy >= now - 14; yy--) {
+            const o = document.createElement('option');
+            o.value = yy;
+            o.textContent = yy;
+            y.appendChild(o);
+        }
+    }
+    const s = document.getElementById('fSort');
+    if (s && s.options.length <= 1) {
+        s.options[0].value = 'popularity.desc';
+        [['rating', 'Top Rated'], ['new', 'Newest']].forEach(([v, l]) => {
+            const o = document.createElement('option');
+            o.value = v;
+            o.textContent = l;
+            s.appendChild(o);
+        });
+    }
+    loadProviderOptions();
+}
+
+async function loadProviderOptions() {
+    if (_providerList) {
+        renderProviderOptions();
+        renderProviderRow();
+        return;
+    }
+    try {
+        const res = await fetchWithTimeout(tmdbUrl('watch/providers/movie', { watch_region: 'IN', language: 'en' }));
+        const data = await res.json();
+        _providerList = (data.results || [])
+            .map(p => ({
+                id: p.provider_id,
+                name: p.provider_name,
+                logo: p.logo_path,
+                rank: (p.display_priorities && p.display_priorities.IN != null) ? p.display_priorities.IN : 999
+            }))
+            .sort((a, b) => a.rank - b.rank);
+        renderProviderOptions();
+        renderProviderRow();
+    } catch (e) {
+        // Provider features are decorative — stay hidden on failure
+    }
+}
+
+function renderProviderOptions() {
+    const p = document.getElementById('fProvider');
+    if (!p || p.options.length > 1 || !_providerList) return;
+    _providerList.slice(0, 30).forEach(x => {
+        const o = document.createElement('option');
+        o.value = x.id;
+        o.textContent = x.name;
+        p.appendChild(o);
+    });
+}
+
+function applyDiscoverFilters() {
+    const isMovies = currentSection === 'movies';
+    if (!isMovies && currentSection !== 'shows') return;
+    const type = isMovies ? 'movie' : 'tv';
+    const params = {};
+
+    const sortVal = (document.getElementById('fSort') || {}).value || 'popularity.desc';
+    if (sortVal === 'rating') {
+        params.sort_by = 'vote_average.desc';
+        params['vote_count.gte'] = 300;
+    } else if (sortVal === 'new') {
+        params.sort_by = isMovies ? 'primary_release_date.desc' : 'first_air_date.desc';
+    } else {
+        params.sort_by = 'popularity.desc';
+    }
+
+    const genre = (document.getElementById('fGenre') || {}).value;
+    if (genre) params.with_genres = genre;
+    const year = (document.getElementById('fYear') || {}).value;
+    if (year) params[isMovies ? 'primary_release_year' : 'first_air_date_year'] = year;
+    const prov = (document.getElementById('fProvider') || {}).value;
+    if (prov) {
+        params.with_watch_providers = prov;
+        params.watch_region = 'IN';
+    }
+
+    LoadMovieOrTv(type, tmdbUrl('discover/' + type, params));
+}
+
+function wireFilters() {
+    ['fGenre', 'fYear', 'fSort', 'fProvider'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', applyDiscoverFilters);
+    });
+    const reset = document.getElementById('fReset');
+    if (reset) reset.addEventListener('click', () => {
+        ['fGenre', 'fYear', 'fProvider'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        const s = document.getElementById('fSort');
+        if (s) s.value = 'popularity.desc';
+        applyDiscoverFilters();
+    });
+}
+
+/* --- Home poster rows ---------------------------------------------------- */
+let _rowsLoaded = false;
+
+async function loadHomeRows() {
+    if (_rowsLoaded) return;
+    _rowsLoaded = true;
+    fetchRow('trendMoviesTrack', 'trending/movie/day', 'movie', 'rowTrendMovies');
+    fetchRow('trendTvTrack', 'trending/tv/day', 'tv', 'rowTrendTv');
+    fetchRow('awardTrack', 'discover/movie', 'movie', 'rowAward', { sort_by: 'vote_average.desc', 'vote_count.gte': 400 });
+    loadBecauseRow();
+    loadProviderOptions();
+}
+
+async function fetchRow(trackId, endpoint, type, rowId, params = {}) {
+    try {
+        const res = await fetchWithTimeout(tmdbUrl(endpoint, params));
+        const data = await res.json();
+        const items = (data.results || []).filter(m => m.poster_path).slice(0, 12);
+        renderProw(trackId, items, type, rowId);
+    } catch (e) {
+        const row = document.getElementById(rowId);
+        if (row) row.style.display = 'none';
+    }
+}
+
+function renderProw(trackId, items, type, rowId) {
+    const track = document.getElementById(trackId);
+    const row = document.getElementById(rowId);
+    if (!track) return;
+    if (!items.length) {
+        if (row) row.style.display = 'none';
+        return;
+    }
+    track.innerHTML = items.map((m, i) => {
+        const title = escapeHtml(m.title || m.name || '');
+        const year = (m.release_date || m.first_air_date || '').slice(0, 4);
+        const rating = m.vote_average ? Number(m.vote_average).toFixed(1) : 'NR';
+        return '<div class="pcard" tabindex="0" role="button" aria-label="' + title + '">'
+            + '<div class="pcard-poster"><img src="https://image.tmdb.org/t/p/w342' + m.poster_path + '" alt="' + title + '" loading="lazy"></div>'
+            + '<div class="pcard-title">' + title + '</div>'
+            + '<div class="pcard-meta"><span class="pcard-star">\u2605 ' + rating + '</span>'
+            + (year ? '<span>' + year + '</span>' : '') + '</div></div>';
+    }).join('');
+    track.querySelectorAll('.pcard').forEach((el, i) => {
+        const open = () => openStream({ ...items[i], media_type: type }, type);
+        el.addEventListener('click', open);
+        el.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                open();
+            }
+        });
+    });
+    if (row) {
+        row.dataset.ready = '1';
+    }
+    // Re-apply chrome: a fetch may have finished after the user navigated away
+    applyPageChrome(currentSection);
+}
+
+async function loadBecauseRow() {
+    const row = document.getElementById('rowBecause');
+    if (!row) return;
+    const hist = (watchHistory || []).find(h => h.type === 'movie' || h.type === 'tv');
+    if (!hist) return;
+    try {
+        const res = await fetchWithTimeout(tmdbUrl(hist.type + '/' + hist.id + '/recommendations'));
+        const data = await res.json();
+        const items = (data.results || []).filter(m => m.poster_path).slice(0, 12);
+        if (!items.length) return;
+        const t = document.getElementById('becauseTitle');
+        if (t) t.textContent = 'Because you watched ' + (hist.title || '');
+        renderProw('becauseTrack', items, hist.type, 'rowBecause');
+    } catch (e) {
+        // Row stays hidden
+    }
+}
+
+function renderProviderRow() {
+    const track = document.getElementById('providerTrack');
+    const row = document.getElementById('rowProviders');
+    if (!track || !row || !_providerList) return;
+    const top = _providerList.filter(p => p.logo).slice(0, 12);
+    if (!top.length) {
+        row.style.display = 'none';
+        return;
+    }
+    track.innerHTML = top.map(p =>
+        '<button type="button" class="pj-provider" data-provider="' + p.id + '" title="' + escapeHtml(p.name) + '">'
+        + '<img src="https://image.tmdb.org/t/p/w92' + p.logo + '" alt="' + escapeHtml(p.name) + '" loading="lazy">'
+        + '<span>' + escapeHtml(p.name) + '</span></button>'
+    ).join('');
+    track.querySelectorAll('.pj-provider').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const pid = btn.dataset.provider;
+            switchSection('movies');
+            const sel = document.getElementById('fProvider');
+            if (sel) {
+                ensureFilterOptions();
+                sel.value = pid;
+            }
+            applyDiscoverFilters();
+        });
+    });
+    row.dataset.ready = '1';
+    applyPageChrome(currentSection);
 }
 
 // Theme toggle functionality
@@ -2114,7 +2485,8 @@ async function addToHistory(item) {
     const historyItem = {
         id: item.id,
         title: item.title || item.name,
-        poster: item.poster_path,
+        // Anime items come from AniList and carry coverImage instead of poster_path
+        poster: item.poster_path || item.poster || (mediaType === 'anime' ? (item.coverImage?.extraLarge || item.coverImage?.large) : '') || '',
         type: mediaType,
         timestamp: Date.now()
     };
@@ -2124,6 +2496,41 @@ async function addToHistory(item) {
     watchHistory.unshift(historyItem);
     watchHistory = watchHistory.slice(0, 10); // Keep last 10
     localStorage.setItem('pkview_history', JSON.stringify(watchHistory));
+}
+
+function historyItemPoster(item) {
+    return item.poster_path || item.poster || '';
+}
+
+// Older history entries (especially anime) were saved without a poster —
+// backfill the visible ones once from their provider so the rail shows art.
+let _historyBackfilled = false;
+async function backfillHistoryPosters(entries) {
+    if (_historyBackfilled) return;
+    const missing = entries.filter(e => e && e.id != null && !historyItemPoster(e));
+    if (!missing.length) return;
+    _historyBackfilled = true;
+    let changed = false;
+    await Promise.all(missing.map(async entry => {
+        try {
+            let poster = '';
+            if (entry.type === 'anime') {
+                const media = await fetchAniListMediaById(entry.id);
+                poster = media?.coverImage?.extraLarge || media?.coverImage?.large || '';
+            } else if (entry.type === 'movie' || entry.type === 'tv') {
+                const res = await fetchWithTimeout(`${TMDB_BASE}/${entry.type}/${entry.id}?api_key=${TMDB_API_KEY}`);
+                if (res.ok) poster = (await res.json()).poster_path || '';
+            }
+            if (poster) {
+                entry.poster = poster;
+                changed = true;
+            }
+        } catch (e) { /* leave the placeholder for this entry */ }
+    }));
+    if (changed) {
+        localStorage.setItem('pkview_history', JSON.stringify(watchHistory));
+        loadWatchHistory();
+    }
 }
 
 function loadWatchHistory() {
@@ -2138,6 +2545,7 @@ function loadWatchHistory() {
 
     section.style.display = 'block';
     grid.innerHTML = '';
+    backfillHistoryPosters(watchHistory);
 
     watchHistory.slice(0, 6).forEach((item, index) => {
         const div = document.createElement('div');
@@ -2146,9 +2554,10 @@ function loadWatchHistory() {
         div.dataset.item = JSON.stringify({...item, media_type: item.type});
         const safeTitle = escapeHtml(item.title || '');
         // AniList covers are absolute URLs; TMDB posters are relative paths
-        const posterSrc = !item.poster ? 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'
-            : /^https?:\/\//.test(item.poster) ? item.poster
-            : IMG_url + item.poster;
+        const poster = historyItemPoster(item);
+        const posterSrc = !poster ? 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfpnrrw7q4mQEeICRY-v-Nx_hfzEwDLrUtog&usqp=CAU'
+            : /^https?:\/\//.test(poster) ? poster
+            : IMG_url + poster;
         div.innerHTML = `
             <img src="${posterSrc}" alt="${safeTitle}" loading="lazy">
             <div class="movie-info"><h3>${safeTitle}</h3></div>

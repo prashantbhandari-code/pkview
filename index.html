@@ -23,7 +23,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
-    <link rel="stylesheet" href="style.css?v=20260928c" />
+    <link rel="stylesheet" href="style.css?v=20260929b" />
     <title>PKVIEW - Free Movie & TV Streaming</title>
   </head>
 
@@ -33,9 +33,10 @@
       <div class="spinner"></div>
     </div>
 
-    <header class="header">
+    <header class="header pj-topbar" id="topBar">
       <div class="container">
-        <div class="header-row">
+        <div class="pj-topbar-inner">
+          <div class="pj-left">
           <button
             type="button"
             class="menu-toggle"
@@ -46,47 +47,34 @@
           >
             <i class="fas fa-bars"></i>
           </button>
-          <a href="index.html" class="brand header-brand">
+          <a href="#" class="brand pj-brand" data-target="home">
             <span class="brand-icon">
               <i class="fas fa-film"></i>
             </span>
             <span class="brand-text">PKVIEW</span>
           </a>
+          </div><!-- /pj-left -->
 
-          <form id="form" class="search-form" role="search">
-            <div class="search-wrapper">
-              <i class="fas fa-search search-icon"></i>
-              <input
-                type="text"
-                id="search"
-                class="search"
-                placeholder="Search movies, shows, anime..."
-              />
-            </div>
-          </form>
+          <nav class="pj-pill" aria-label="Primary">
+            <a href="#" class="pj-navlink active" data-target="home"><i class="fas fa-home"></i><span>Home</span></a>
+            <a href="#" class="pj-navlink" data-target="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+            <a href="#" class="pj-navlink" data-target="shows"><i class="fas fa-tv"></i><span>Shows</span></a>
+            <a href="#" class="pj-navlink" data-target="mylist"><i class="fas fa-bookmark"></i><span>My List</span></a>
+          </nav>
 
-          <div class="header-actions">
-            <div class="pageChange" title="Switch Movies / TV Shows">
-              <svg
-                class="switch"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                stroke-width="2"
-                stroke="#7378c5"
-                fill="none"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                <path
-                  d="M3 4m0 1a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1z"
-                ></path>
-                <path d="M7 20l10 0"></path>
-                <path d="M9 16l0 4"></path>
-                <path d="M15 16l0 4"></path>
-              </svg>
-            </div>
-            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+          <div class="pj-actions">
+            <form id="form" class="pj-search" role="search">
+              <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  id="search"
+                  class="search"
+                  placeholder="Search movies, shows, anime..."
+                />
+              </div>
+            </form>
+            <button class="theme-toggle pj-icon-btn" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
               <i class="fas fa-sun"></i>
               <i class="fas fa-moon"></i>
             </button>
@@ -94,7 +82,8 @@
               href="https://github.com/prashantbhandari-code/pkview"
               target="_blank"
               rel="noopener"
-              class="github-link"
+              class="github-link pj-icon-btn"
+              title="Source on GitHub"
             >
               <i class="fab fa-github"></i>
             </a>
@@ -305,32 +294,8 @@
       </div>
     </section>
 
-    <!-- Hero -->
-    <section id="hero">
-      <div class="hero-bg"></div>
-      <div class="hero-overlay"></div>
-      <div class="container">
-        <div class="hero-content">
-          <span class="hero-badge"><i class="fas fa-fire"></i> Trending Now</span>
-          <h1 class="hero-title">Your Season <span class="accent">Awaits</span></h1>
-          <p class="hero-sub">
-            Movies, TV shows, anime, Bollywood, Nepali, Korean &amp; live sports —
-            all in one place.
-          </p>
-          <div class="hero-actions">
-            <button onclick="document.getElementById('search').focus()">
-              <i class="fas fa-search"></i> Search
-            </button>
-            <button
-              class="hero-cta"
-              onclick="document.querySelector('.nav-link.active').click()"
-            >
-              <i class="fas fa-play"></i> Watch Now
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- Cinematic hero (populated by loadHomeSpotlight) -->
+    <section id="homeHero" class="home-hero" style="display:none;"></section>
 
     <!-- Continue Watching -->
     <section id="watchHistorySection" class="content-section" style="display:none;">
@@ -347,6 +312,45 @@
         <button class="clear-all" id="clearFavorites" style="display:none;">Clear All</button>
       </div>
       <div class="content-grid" id="favoritesGrid"></div>
+    </section>
+
+    <!-- Home rows (cinejoy-style) -->
+    <section class="pj-row" id="rowProviders" style="display:none;">
+      <div class="pj-row-head">
+        <h2>Browse by Provider</h2>
+      </div>
+      <div class="pj-providers" id="providerTrack"></div>
+    </section>
+
+    <section class="pj-row" id="rowBecause" style="display:none;">
+      <div class="pj-row-head">
+        <h2 id="becauseTitle">Because you watched</h2>
+      </div>
+      <div class="pj-track" id="becauseTrack"></div>
+    </section>
+
+    <section class="pj-row" id="rowTrendMovies" style="display:none;">
+      <div class="pj-row-head">
+        <h2>Trending Movies</h2>
+        <button class="pj-viewall" data-target="movies">View All <i class="fas fa-arrow-right"></i></button>
+      </div>
+      <div class="pj-track" id="trendMoviesTrack"></div>
+    </section>
+
+    <section class="pj-row" id="rowTrendTv" style="display:none;">
+      <div class="pj-row-head">
+        <h2>Trending Series</h2>
+        <button class="pj-viewall" data-target="shows">View All <i class="fas fa-arrow-right"></i></button>
+      </div>
+      <div class="pj-track" id="trendTvTrack"></div>
+    </section>
+
+    <section class="pj-row" id="rowAward" style="display:none;">
+      <div class="pj-row-head">
+        <h2>Award Winning Movies</h2>
+        <button class="pj-viewall" data-target="movies">View All <i class="fas fa-arrow-right"></i></button>
+      </div>
+      <div class="pj-track" id="awardTrack"></div>
     </section>
 
     <!-- Live Sports Channels -->
@@ -387,6 +391,15 @@
       <button class="sort-btn active" data-sort="trending" onclick="loadAnimeFromAniList('trending',1)">🔥 Trending</button>
       <button class="sort-btn" data-sort="popular" onclick="loadAnimeFromAniList('popular',1)">⭐ Popular</button>
       <button class="sort-btn" data-sort="topRated" onclick="loadAnimeFromAniList('topRated',1)">🏆 Top Rated</button>
+    </div>
+
+    <!-- Browse filters (Movies / Shows) -->
+    <div class="pj-filters" id="filterBar" style="display:none;" aria-label="Filters">
+      <select id="fGenre" class="pj-chip" aria-label="Genre"><option value="">Genre</option></select>
+      <select id="fYear" class="pj-chip" aria-label="Year"><option value="">Year</option></select>
+      <select id="fSort" class="pj-chip" aria-label="Sort"><option value="">Popular</option></select>
+      <select id="fProvider" class="pj-chip" aria-label="Provider"><option value="">Provider</option></select>
+      <button type="button" id="fReset" class="pj-chip pj-chip-reset">Reset</button>
     </div>
 
     <!-- Grid -->
@@ -432,43 +445,7 @@
       </svg>
     </button>
 
-    <!-- Section Hubs (genres + languages) -->
-    <section class="hub-section secondary">
-      <div class="container">
-        <div class="hub-row">
-          <button class="hub-btn" data-genre="28">
-            <i class="fas fa-star"></i> Action
-          </button>
-          <button class="hub-btn" data-genre="12">
-            <i class="fas fa-compass"></i> Adventure
-          </button>
-          <button class="hub-btn" data-genre="16">
-            <i class="fas fa-paw"></i> Animation
-          </button>
-          <button class="hub-btn" data-genre="35">
-            <i class="fas fa-grin-stars"></i> Comedy
-          </button>
-          <button class="hub-btn" data-genre="80">
-            <i class="fas fa-clipboard-check"></i> Crime
-          </button>
-          <button class="hub-btn" data-genre="18">
-            <i class="fas fa-heart"></i> Drama
-          </button>
-          <button class="hub-btn" data-genre="27">
-            <i class="fas fa-skull"></i> Horror
-          </button>
-          <button class="hub-btn" data-genre="878">
-            <i class="fas fa-rocket"></i> Sci-Fi
-          </button>
-          <button class="hub-btn" data-genre="53">
-            <i class="fas fa-bolt"></i> Thriller
-          </button>
-          <button class="hub-btn" data-genre="10749">
-            <i class="fas fa-heart-crack"></i> Romance
-          </button>
-        </div>
-      </div>
-    </section>
+
 
     <!-- Footer -->
     <footer class="footer">
@@ -624,7 +601,17 @@
       </div>
     </div>
 
+    <!-- Bottom dock (home) -->
+    <nav class="pj-dock" id="pjDock" aria-label="Quick navigation">
+      <a href="#" data-target="home" class="active"><i class="fas fa-home"></i><span>Home</span></a>
+      <a href="#" data-target="movies"><i class="fas fa-film"></i><span>Movies</span></a>
+      <a href="#" data-target="shows"><i class="fas fa-tv"></i><span>Shows</span></a>
+      <a href="#" data-target="mylist"><i class="fas fa-bookmark"></i><span>My List</span></a>
+      <a href="#" data-target="search"><i class="fas fa-search"></i><span>Search</span></a>
+      <a href="#" data-target="theme"><i class="fas fa-gear"></i><span>Settings</span></a>
+    </nav>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-    <script src="script_main.js?v=20260928c"></script>
+    <script src="script_main.js?v=20260929b"></script>
   </body>
 </html>
