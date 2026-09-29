@@ -232,8 +232,41 @@ const ANIME_SERVERS = [
         name: 'Miruro',
         url: (id, ep) => `https://www.miruro.tv/watch?id=${id}${ep ? '&ep=' + ep : ''}`,
         external: true
+    },
+    {
+        name: 'AnimeSalt',
+        // Hindi-first anime catalog (their player defaults to the Hindi track).
+        // Keys pages by WordPress title slug, not by AniList id, and blocks
+        // iframes — so we open their series/movie page in a new tab.
+        langs: ['hindi'],
+        external: true,
+        url: () => {
+            const item = (typeof currentStreamItem !== 'undefined' && currentStreamItem) || {};
+            const title = item.title || item.name || '';
+            const slug = slugifyTitle(title);
+            if (!slug) return 'https://animesalt.cx/';
+            const isMovie = item.format === 'MOVIE' || item.media_type === 'movie';
+            // History, hero and favorites entries omit AniList's `format`, and
+            // guessing /series/ for a film is a hard nginx 404 on their side —
+            // fall back to their search, which resolves either page type.
+            if (!item.format && !isMovie) {
+                return 'https://animesalt.cx/?s=' + encodeURIComponent(title);
+            }
+            return `https://animesalt.cx/${isMovie ? 'movies' : 'series'}/${slug}/`;
+        }
     }
 ];
+
+// WordPress-style permalink slug — matches animesalt.cx permalinks: lowercase,
+// apostrophes and periods dropped outright ("Dr. STONE" -> "dr-stone",
+// "Hero's" -> "heros"), everything else collapsed to hyphens.
+function slugifyTitle(text) {
+    return String(text || '')
+        .toLowerCase()
+        .replace(/['\u2019\u02bc.]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
 
 // Audio versions offered in the anime modal, labelled for what they really are.
 const ANIME_AUDIO_OPTIONS = [
@@ -507,18 +540,22 @@ function loadAnimeServer(index) {
 
     // Providers only carry the versions they document, so resolve before loading
     const picked = animeLangFor(server, currentAnimeLang);
-    renderAnimeHint(server, currentAnimeLang);
 
     if (server.external) {
-        // Open in new tab instead of iframe
-        window.open(server.url(animeId, currentAnimeEpisode, currentAnimeLang), '_blank');
+        // Open in new tab instead of iframe. noopener so the external site
+        // never gets a handle on our window (reverse-tabnabbing).
+        window.open(server.url(animeId, currentAnimeEpisode, currentAnimeLang), '_blank', 'noopener');
+        renderExternalServerHint(server, ANIME_SERVERS[prevIndex]);
         // External servers block iframes — keep the previous embed active
         currentServerIndex = prevIndex;
         document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
-            tab.classList.toggle('active', i === prevIndex);
+            tab.classList.toggle('active', tabServerIndex(tab, i) === prevIndex);
         });
         return;
-    }        frame.src = server.url(animeId, currentAnimeEpisode, picked.used);
+    }
+
+    renderAnimeHint(server, currentAnimeLang);
+    frame.src = server.url(animeId, currentAnimeEpisode, picked.used);
     renderDownloadSources('anime');
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
@@ -539,7 +576,7 @@ function loadAnimeServer(index) {
     }, 5000);
 
     document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
-        tab.classList.toggle('active', i === index);
+        tab.classList.toggle('active', tabServerIndex(tab, i) === index);
     });
 }
 
@@ -942,6 +979,16 @@ const STREAMING_SERVERS = [
         movie: (id) => `https://player.videasy.net/movie/${id}?color=E11D48`,
         tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}?color=E11D48`,
         langMode: LANG_MODE.NONE
+    },
+    {
+        name: 'Cinejoy',
+        // TMDB-keyed watch routes, read from cinejoy's own bundle:
+        // /watch/movie/[id] and /watch/tv/[id]/[season]/[episode].
+        // The site sends X-Frame-Options: DENY, so it opens in a new tab.
+        external: true,
+        movie: (id) => `https://cinejoy.pk/watch/movie/${id}`,
+        tv: (id, s, e) => `https://cinejoy.pk/watch/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
     }
 ];
 
@@ -990,6 +1037,22 @@ function renderPlayerHint(server, lang) {
     }
 }
 
+// Tell the truth when a server can't be embedded and opened in a new tab.
+function renderExternalServerHint(server, prevServer) {
+    const hint = document.getElementById('playerHint');
+    if (!hint || !server) return;
+
+    hint.style.display = 'flex';
+    hint.className = 'player-hint';
+    const stays = (prevServer && !prevServer.external)
+        ? ' The player here stays on <strong>' + prevServer.name + '</strong>.'
+        : '';
+    hint.innerHTML =
+        '<i class="fas fa-arrow-up-right-from-square"></i><span><strong>' + server.name +
+        '</strong> does not allow embedding, so it opened in a new tab — pick the audio track inside its own player.' +
+        stays + '</span>';
+}
+
 // Remember the last server the user played so the next title opens on it.
 const LAST_SERVER_KEY = 'pkview_last_server';
 const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server';
@@ -1008,10 +1071,27 @@ function recallServer(count, key = LAST_SERVER_KEY, isValid) {
     return 0;
 }
 
+// The server index a tab refers to: data-server is canonical, DOM position is
+// only a fallback — so reordering tabs can never flag or highlight the wrong
+// entry while the click handler still plays the right one.
+function tabServerIndex(tab, fallback) {
+    const n = parseInt(tab && tab.dataset ? tab.dataset.server : NaN, 10);
+    return isNaN(n) ? fallback : n;
+}
+
 // Small flag on a server tab so the ones that really honour the selector stand out.
 function annotateServerTab(tab, server) {
     const mode = serverLangMode(server);
     const langs = server.langs || [];
+
+    if (server.external) {
+        tab.title = server.name + ': opens in a new tab (this site does not allow embedding)';
+        tab.appendChild(makeTabFlag('external', 'NEW TAB'));
+        if (langs.includes('hindi')) {
+            tab.appendChild(makeTabFlag('audio', 'HINDI'));
+        }
+        return;
+    }
 
     if (mode === LANG_MODE.AUDIO) {
         tab.title = server.name + ': honours the language selector for audio tracks';
@@ -1049,6 +1129,9 @@ function makeTabFlag(kind, text) {
    -------------------------------------------------------------------------- */
 const DOWNLOAD_SOURCES = [
     { name: '4KHDHub',    mode: 'search', url: q => `https://4khdhub.one/?s=${encodeURIComponent(q)}`, kinds: ['movie', 'tv', 'anime'], note: '4K/1080p dual audio' },
+    // AnimeSalt's WP search needs the bare title — strip the "year" and "hindi"
+    // suffixes we append for the other sites, or AND-matched search returns nothing.
+    { name: 'AnimeSalt',  mode: 'search', url: q => `https://animesalt.cx/?s=${encodeURIComponent(q.replace(/\s+hindi$/i, '').replace(/\s+\d{4}$/, '').trim())}`, kinds: ['anime'], note: 'Hindi-first streams, download button in player' },
     { name: 'HDHub4u',    mode: 'google', brand: 'hdhub4u',    kinds: ['movie', 'tv'], note: 'Hindi dubs' },
     { name: 'KatMovieHD', mode: 'google', brand: 'katmoviehd', kinds: ['movie', 'tv'], note: 'Dual audio' },
     { name: 'MoviesBaba', mode: 'google', brand: 'moviesbaba', kinds: ['movie', 'tv'], note: 'Hindi movies' },
@@ -1252,18 +1335,22 @@ window.addEventListener("DOMContentLoaded", (ev) => {
 
     // Server tab clicks — annotate first so the flags reflect the metadata above
     document.querySelectorAll('.server-tab').forEach((tab, i) => {
-        const server = STREAMING_SERVERS[i];
+        const serverIndex = tabServerIndex(tab, i);
+        const server = STREAMING_SERVERS[serverIndex];
         if (server) annotateServerTab(tab, server);
         tab.addEventListener('click', () => {
-            const serverIndex = isNaN(parseInt(tab.dataset.server, 10)) ? i : parseInt(tab.dataset.server, 10);
-            rememberServer(serverIndex);
+            // External servers never become the active embed, so never store them.
+            if (STREAMING_SERVERS[serverIndex] && !STREAMING_SERVERS[serverIndex].external) {
+                rememberServer(serverIndex);
+            }
             loadServer(serverIndex);
         });
     });
 
     document.querySelectorAll('.anime-server-tab').forEach((tab, i) => {
-        const server = ANIME_SERVERS[i];
+        const server = ANIME_SERVERS[tabServerIndex(tab, i)];
         if (server) annotateServerTab(tab, server);
+        tab.addEventListener('click', () => switchAnimeServer(tabServerIndex(tab, i)));
     });
 
     // Language selector — reload player with preferred audio language
@@ -2181,8 +2268,10 @@ function openStream(item, mediaType) {
     currentStreamItem = item;
     if (mediaType) currentStreamItem.media_type = mediaType;
     // Open on the server the user last played (falls back to VixSrc, the only
-    // server that honours the language selector for audio).
-    currentServerIndex = recallServer(STREAMING_SERVERS.length);
+    // server that honours the language selector for audio). Never recall an
+    // external server — it would pop a window instead of embedding.
+    currentServerIndex = recallServer(STREAMING_SERVERS.length, LAST_SERVER_KEY,
+        (i) => STREAMING_SERVERS[i] && !STREAMING_SERVERS[i].external);
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');
     const langSelect = document.getElementById('languageSelect');
@@ -2279,6 +2368,7 @@ async function loadEpisodes(tvId, seasonNum) {
 
 // Load streaming server
 function loadServer(index) {
+    const prevIndex = currentServerIndex;
     currentServerIndex = index;
     const frame = document.getElementById('streamFrame');
     const errorMsg = document.getElementById('serverError');
@@ -2290,6 +2380,18 @@ function loadServer(index) {
     const langSelect = document.getElementById('languageSelect');
     const preferredLang = (langSelect && langSelect.value) || 'hi';
 
+    // Sites like cinejoy.pk send X-Frame-Options: DENY — open them in a new
+    // tab and keep the current embed playing underneath.
+    if (server.external) {
+        window.open(buildStreamUrl(server, currentStreamItem, preferredLang), '_blank', 'noopener');
+        renderExternalServerHint(server, STREAMING_SERVERS[prevIndex]);
+        currentServerIndex = prevIndex;
+        document.querySelectorAll('.server-tab').forEach((tab, i) => {
+            tab.classList.toggle('active', tabServerIndex(tab, i) === prevIndex);
+        });
+        return;
+    }
+
     frame.src = buildStreamUrl(server, currentStreamItem, preferredLang);
     renderPlayerHint(server, preferredLang);
     renderDownloadSources(currentStreamItem.media_type === 'anime' ? 'anime' : (currentStreamItem.media_type === 'tv' ? 'tv' : 'movie'));
@@ -2298,7 +2400,7 @@ function loadServer(index) {
 
     // Update active tab
     document.querySelectorAll('.server-tab').forEach((tab, i) => {
-        tab.classList.toggle('active', i === index);
+        tab.classList.toggle('active', tabServerIndex(tab, i) === index);
     });
 }
 
@@ -2317,6 +2419,14 @@ function openDownload() {
 
 // Load trailer
 async function loadTrailer(item) {
+    const trailerBtn = document.getElementById('trailerBtn');
+    // Anime items are keyed by AniList id, not TMDB — movie/{id}/videos would
+    // 404 or return some unrelated film's trailer. No anime trailer source is
+    // wired, so hide the button (it may still be showing a previous title).
+    if (item.media_type === 'anime') {
+        if (trailerBtn) trailerBtn.style.display = 'none';
+        return;
+    }
     const whichPage = item.media_type === 'tv' ? 'tv' : 'movie';
     const endpoint = whichPage === 'movie' ? 'movie/' + item.id + '/videos' : 'tv/' + item.id + '/videos';
     const url = tmdbUrl(endpoint);

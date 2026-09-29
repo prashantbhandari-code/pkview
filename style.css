@@ -1545,12 +1545,22 @@ hr {
   color: #60a5fa;
 }
 
+.tab-flag.external {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fb923c;
+}
+
 .server-tab.active .tab-flag.audio {
   background: rgba(0, 0, 0, 0.22);
   color: #fff;
 }
 
 .server-tab.active .tab-flag.subtitle {
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+}
+
+.server-tab.active .tab-flag.external {
   background: rgba(0, 0, 0, 0.22);
   color: #fff;
 }
@@ -2502,6 +2512,11 @@ body.light-theme .tab-flag.audio {
 body.light-theme .tab-flag.subtitle {
   background: rgba(37, 99, 235, 0.14);
   color: #1d4ed8;
+}
+
+body.light-theme .tab-flag.external {
+  background: rgba(234, 88, 12, 0.14);
+  color: #c2410c;
 }
 
 /* Hindi dual-audio download source links inside the player modal */
