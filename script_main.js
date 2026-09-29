@@ -997,20 +997,24 @@ async function firstLiveServerIndex(servers, startIndex) {
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
+        name: 'VidNest',
+        movie: (id) => `https://vidnest.fun/movie/${id}`,
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
+        // Default server: verified reachable and embeddable when VixSrc sat
+        // behind a Cloudflare challenge that breaks cross-site embedding.
+        langMode: LANG_MODE.NONE
+    },
+    {
         name: 'VixSrc',
         // Player includes a built-in Download button where the source provides one
         movie: (id) => `https://vixsrc.to/movie/${id}`,
         tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
         // Documented: "lang - Sets preferred language for the audio track".
-        // Listed first because it is the only server that honours the
-        // language selector for audio.
+        // Only server that honours the language selector for audio — promoted
+        // back to default when its Cloudflare wall lifts (probe flags it dead
+        // today: 403s on the embed document).
         langMode: LANG_MODE.AUDIO
-    },
-    {
-        name: 'VidNest',
-        movie: (id) => `https://vidnest.fun/movie/${id}`,
-        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.NONE
+
     },
     {
         name: 'EmbedMaster',
