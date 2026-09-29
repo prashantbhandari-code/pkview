@@ -1836,6 +1836,43 @@ body.light-theme .trailer-btn.download-btn:hover {
   font-size: 1.1rem;
 }
 
+.server-error p {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.server-retry {
+  border: 1px solid rgba(255, 107, 53, 0.5);
+  background: rgba(255, 107, 53, 0.12);
+  color: #ff8b5f;
+  border-radius: 999px;
+  padding: 5px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.server-retry:hover {
+  background: rgba(255, 107, 53, 0.25);
+  color: #fff;
+}
+
+/* Tabs for hosts that failed the reachability probe */
+.server-tab.server-dead,
+.anime-server-tab.server-dead {
+  opacity: 0.38;
+}
+
+.server-tab.server-dead,
+.anime-server-tab.server-dead {
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 107, 53, 0.7);
+}
+
 .server-tabs {
   display: flex;
   flex-wrap: wrap;

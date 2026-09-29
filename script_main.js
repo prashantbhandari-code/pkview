@@ -560,6 +560,37 @@ function loadAnimeServer(index) {
     frame.style.display = 'block';
     document.getElementById('serverError').style.display = 'none';
 
+    // Health-check the host (see loadServer) — fall through to the next
+    // live anime server or surface the error panel when all are down.
+    probeServerHealth(frame.src).then(alive => {
+        if (alive) {
+            markDeadServerTabs('.anime-server-tab', ANIME_SERVERS);
+            return;
+        }
+        const tab = document.querySelector('.anime-server-tab[data-server="' + index + '"]');
+        if (tab) { tab.classList.add('server-dead'); tab.title = 'Server unreachable right now'; }
+        if (currentServerIndex !== index) return; // user already moved on
+        firstLiveServerIndex(ANIME_SERVERS, index).then(fallback => {
+            if (currentServerIndex !== index) return;
+            if (fallback >= 0) {
+                loadAnimeServer(fallback);
+            } else {
+                const errorMsg2 = document.getElementById('serverError');
+                frame.style.display = 'none';
+                errorMsg2.style.display = 'flex';
+                const p = errorMsg2.querySelector('p');
+                if (p) {
+                    p.textContent = '⚠️ Streaming servers are unreachable right now. Check your connection or try again later.';
+                    p.insertAdjacentHTML('beforeend', ' <button type="button" class="server-retry">Retry</button>');
+                    p.querySelector('.server-retry').addEventListener('click', () => {
+                        _hostHealth.clear();
+                        loadAnimeServer(index);
+                    });
+                }
+            }
+        });
+    });
+
     // Detect failed embed after a delay
     clearTimeout(window._animeLoadTimeout);
     window._animeLoadTimeout = setTimeout(() => {
@@ -906,6 +937,62 @@ const LANGUAGE_LABELS = {
     kn: 'Kannada', bn: 'Bengali', ur: 'Urdu', ko: 'Korean', ja: 'Japanese',
     es: 'Spanish', fr: 'French'
 };
+
+// --- Embed host health probing ---
+// Embed iframes fire `load` even when the network request was blocked or the
+// host is gone (ORB blocks, DNS failures), so iframe events cannot tell a
+// working server from a dead one. A no-cors fetch resolves only when the host
+// actually answers and rejects on network-level failure — exactly the "server
+// is down" case. Results are cached per host for the page session.
+const SERVER_ERROR_DEFAULT_TEXT = '⚠️ This server is currently unavailable. Please try another server.';
+const _hostHealth = new Map();
+
+function probeServerHealth(sampleUrl) {
+    let host = '';
+    try { host = new URL(sampleUrl).host; } catch (e) { return Promise.resolve(false); }
+    if (!host) return Promise.resolve(false);
+    if (_hostHealth.has(host)) return Promise.resolve(_hostHealth.get(host));
+    return new Promise(resolve => {
+        let settled = false;
+        const finish = ok => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            _hostHealth.set(host, ok);
+            resolve(ok);
+        };
+        const timer = setTimeout(() => finish(false), 6000);
+        fetch('https://' + host + '/favicon.ico', { mode: 'no-cors', cache: 'no-store' })
+            .then(() => finish(true))
+            .catch(() => finish(false));
+    });
+}
+
+// Dim every tab whose host is unreachable so users can see why it was skipped
+async function markDeadServerTabs(selector, servers) {
+    await Promise.all(servers.map(async (s, i) => {
+        if (!s || s.external) return;
+        const sample = s.movie ? s.movie(1) : s.url(1, 1, 'sub');
+        if (await probeServerHealth(sample)) return;
+        const tab = document.querySelector(selector + '[data-server="' + i + '"]');
+        if (tab) {
+            tab.classList.add('server-dead');
+            tab.title = 'Server unreachable right now';
+        }
+    }));
+}
+
+// First reachable non-external server other than startIndex, or -1
+async function firstLiveServerIndex(servers, startIndex) {
+    for (let i = 0; i < servers.length; i++) {
+        if (i === startIndex) continue;
+        const s = servers[i];
+        if (!s || s.external) continue;
+        const sample = s.movie ? s.movie(1) : s.url(1, 1, 'sub');
+        if (await probeServerHealth(sample)) return i;
+    }
+    return -1;
+}
 
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
@@ -1348,7 +1435,9 @@ window.addEventListener("DOMContentLoaded", (ev) => {
             if (STREAMING_SERVERS[serverIndex] && !STREAMING_SERVERS[serverIndex].external) {
                 rememberServer(serverIndex);
             }
-            loadServer(serverIndex);
+            // force: an explicit click on a flagged-dead server must still
+            // attempt it — auto-skip is only for unattended opens.
+            loadServer(serverIndex, { force: true });
         });
     });
 
@@ -2776,7 +2865,7 @@ async function loadEpisodes(tvId, seasonNum) {
 }
 
 // Load streaming server
-function loadServer(index) {
+function loadServer(index, opts = {}) {
     const prevIndex = currentServerIndex;
     currentServerIndex = index;
     const frame = document.getElementById('streamFrame');
@@ -2806,6 +2895,39 @@ function loadServer(index) {
     renderDownloadSources(currentStreamItem.media_type === 'anime' ? 'anime' : (currentStreamItem.media_type === 'tv' ? 'tv' : 'movie'));
     errorMsg.style.display = 'none';
     frame.style.display = 'block';
+
+    // Health-check the host in the background: a blocked/dead embed still
+    // fires iframe `load`, so this is the only reliable detection. If the
+    // host is unreachable, transparently move to the first live server —
+    // and if none respond, surface the error panel with a retry.
+    probeServerHealth(frame.src).then(alive => {
+        if (alive) {
+            markDeadServerTabs('.server-tab', STREAMING_SERVERS);
+            return;
+        }
+        const tab = document.querySelector('.server-tab[data-server="' + index + '"]');
+        if (tab) { tab.classList.add('server-dead'); tab.title = 'Server unreachable right now'; }
+        // An explicit click on a dead server stays put — the user insisted.
+        if (opts.force || currentServerIndex !== index) return;
+        firstLiveServerIndex(STREAMING_SERVERS, index).then(fallback => {
+            if (currentServerIndex !== index) return;
+            if (fallback >= 0) {
+                loadServer(fallback);
+            } else {
+                frame.style.display = 'none';
+                errorMsg.style.display = 'flex';
+                const p = errorMsg.querySelector('p');
+                if (p) {
+                    p.textContent = '⚠️ Streaming servers are unreachable right now. Check your connection or try again later.';
+                    p.insertAdjacentHTML('beforeend', ' <button type="button" class="server-retry">Retry</button>');
+                    p.querySelector('.server-retry').addEventListener('click', () => {
+                        _hostHealth.clear();
+                        loadServer(index);
+                    });
+                }
+            }
+        });
+    });
 
     // Update active tab
     document.querySelectorAll('.server-tab').forEach((tab, i) => {
