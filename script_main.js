@@ -1047,9 +1047,11 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'MultiEmbed',
-        movie: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-        tv: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
+        name: 'VidSrc.su',
+        // Verified live and streaming real video (Inception auto-played
+        // top-level); no frame-blocking headers; tv/s/e paths 200.
+        movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.su/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
@@ -1059,16 +1061,17 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'Embed.su',
-        movie: (id) => `https://embed.su/embed/movie/${id}`,
-        tv: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`,
+        name: 'VidSrc.to',
+        // Verified reachable, no frame-blocking headers, tv paths 200.
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'Videasy',
-        // Quality selector up to 1080p; themed to app accent
-        movie: (id) => `https://player.videasy.net/movie/${id}?color=E11D48`,
-        tv: (id, s, e) => `https://player.videasy.net/tv/${id}/${s}/${e}?color=E11D48`,
+        name: 'VidSrc.cc',
+        // Verified reachable; probe flags it if it flakes.
+        movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
@@ -1145,7 +1148,9 @@ function renderExternalServerHint(server, prevServer) {
 }
 
 // Remember the last server the user played so the next title opens on it.
-const LAST_SERVER_KEY = 'pkview_last_server';
+// v2: server order changed when dead providers were swapped out — a saved
+// index from the old list would point at the wrong server.
+const LAST_SERVER_KEY = 'pkview_last_server_v2';
 const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server';
 
 function rememberServer(index, key = LAST_SERVER_KEY) {
@@ -2939,15 +2944,16 @@ function loadServer(index, opts = {}) {
     });
 }
 
-// Open a player page in a new tab that offers download/quality options
+// Open a player page in a new tab. VidSrc.su is the verified-live player
+// right now (the old Videasy and VidFast hosts for this button both died).
 function openDownload() {
     if (!currentStreamItem) return;
     const id = currentStreamItem.id;
     let url;
     if (currentStreamItem.media_type === 'tv') {
-        url = `https://player.videasy.net/tv/${id}/${currentSeason}/${currentEpisode}?color=E11D48&download=true`;
+        url = `https://vidsrc.su/embed/tv/${id}/${currentSeason}/${currentEpisode}`;
     } else {
-        url = `https://player.videasy.net/movie/${id}?color=E11D48&download=true`;
+        url = `https://vidsrc.su/embed/movie/${id}`;
     }
     window.open(url, '_blank', 'noopener');
 }
