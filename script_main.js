@@ -209,23 +209,22 @@ const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'po
 // route (vidnest.fun/anime/{anilistId}/{ep}/hindi).
 const ANIME_SERVERS = [
     {
-        // The only anime embed that still plays inside our sandboxed iframe
-        // (verified: One Piece streams fine) - default server.
+        // Plays inside the in-page player iframe (verified: One Piece streams
+        // fine) - default server.
         name: 'Megavid',
         langs: ['sub', 'dub'],
         url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        // Detects our sandboxed iframe and refuses to play ("Sandboxed our
-        // player is not allowed"), so it opens in a new tab where its ads
-        // stay contained.
+        // Refuses to play embedded ("Sandboxed our player is not allowed"),
+        // so it opens in a new tab where its ads stay contained.
         name: 'MegaPlay',
         external: true,
         langs: ['sub', 'dub'],
         url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
-        // Same sandbox refusal ("Please Disable Sandbox") - new tab only.
+        // Same embed refusal ("Please Disable Sandbox") - new tab only.
         name: 'VidNest',
         external: true,
         langs: ['sub', 'dub', 'hindi'],
@@ -1007,12 +1006,12 @@ async function firstLiveServerIndex(servers, startIndex) {
     return -1;
 }
 
-// Streaming servers configuration. Providers run their own ads: our sandboxed
-// embeds contain them, and providers that refuse the sandbox open in a new tab.
+// Streaming servers configuration. Providers run their own ads: servers marked
+// external open in a new tab so their ads and redirects stay off our page.
 const STREAMING_SERVERS = [
     {
-        // Default: verified playing inside our sandboxed iframe (its player
-        // renders in the top document rather than nested frames).
+        // Default: verified playing inside the in-page player iframe (its
+        // player renders in the top document rather than nested frames).
         name: 'EmbedMaster',
         movie: (id) => `https://embedmaster.link/movie/${id}`,
         tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`,
@@ -1074,10 +1073,9 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        // Silently shows an empty player inside a sandboxed iframe (its anime
-        // route prints "Please Disable Sandbox"). Its ad redirects need to
-        // escape the sandbox, so it opens in a new tab instead - our sandbox
-        // is what stops providers hijacking the page.
+        // Silently shows an empty player when embedded (its anime route
+        // prints "Please Disable Sandbox"). Its ad redirects need to escape,
+        // so it opens in a new tab instead - keeping them off our page.
         name: 'VidNest',
         external: true,
         movie: (id) => `https://vidnest.fun/movie/${id}`,
@@ -1085,11 +1083,10 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        // Streams real video, but refuses to run inside a sandboxed iframe
-        // (shows its own "Restricted Embed Detected" notice) because its
-        // ad redirects need to escape. Sandboxing the embed is what stops
-        // providers hijacking the page, so this one opens in a new tab -
-        // its ads stay contained there.
+        // Streams real video, but refuses to run when embedded (shows its
+        // own "Restricted Embed Detected" notice) because its ad redirects
+        // need to escape. Opens in a new tab so those redirects stay off
+        // our page.
         name: 'VidSrc.su',
         external: true,
         movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
@@ -1173,10 +1170,10 @@ function renderExternalServerHint(server, prevServer) {
 // Remember the last server the user played so the next title opens on it.
 // v2: server order changed when dead providers were swapped out — a saved
 // index from the old list would point at the wrong server.
-// v3: order changed again - EmbedMaster is the default and sandbox refusers
+// v3: order changed again - EmbedMaster is the default and embed refusers
 // (VidNest, VidSrc.su, Cinejoy) open in new tabs. Old saved indexes invalid.
 const LAST_SERVER_KEY = 'pkview_last_server_v3';
-// v2: anime servers reordered - Megavid, the only sandbox-tolerant embed,
+// v2: anime servers reordered - Megavid, the only embed that tolerated
 // is now the default, so a saved index from the old list points elsewhere.
 const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server_v2';
 
