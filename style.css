@@ -4850,6 +4850,7 @@ body.dock-hidden .pj-dock {
   scroll-snap-align: start;
   cursor: pointer;
   outline: none;
+  min-width: 0; /* long nowrap titles must ellipsize, not stretch the card */
 }
 
 .pcard-poster {
