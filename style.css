@@ -3665,7 +3665,7 @@ body.light-theme .error-state {
 .spotlight-title { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 800; color: #fff; margin: 0 0 10px; line-height: 1.15; text-shadow: 0 3px 14px rgba(0,0,0,0.6); }
 .spotlight-meta { display: flex; gap: 10px; align-items: center; color: rgba(255,255,255,0.85); font-size: 0.95rem; margin-bottom: 12px; flex-wrap: wrap; }
 .spotlight-score { color: #ffd700; font-weight: 700; }
-.spotlight-desc { color: rgba(255,255,255,0.75); font-size: 0.9rem; line-height: 1.55; margin-bottom: 18px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.spotlight-desc { color: rgba(255,255,255,0.75); font-size: 0.9rem; line-height: 1.55; margin-bottom: 18px; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
 .spotlight-watch { background: linear-gradient(135deg, #ff1361, #e11d48); color: #fff; border: none; padding: 13px 30px; border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 6px 22px rgba(255,19,97,0.45); }
 .spotlight-watch:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(255,19,97,0.6); }
 .spotlight-dots { position: absolute; bottom: 18px; right: 30px; display: flex; gap: 8px; z-index: 3; }

@@ -120,7 +120,7 @@ function getStudio(a){if(!a.studios?.nodes)return '';const m=a.studios.nodes.fin
 
 let _heroInterval=null,_heroIdx=0;
 function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length||currentSection!=='anime'){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
-function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h1 class=\"anime-hero-title\">'+escapeHtml(t)+'</h1><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
+function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');let d=(a.description||'').replace(/<[^>]*>/g,' ').substring(0,180);const dc=d.lastIndexOf(' ');if(dc>60)d=d.slice(0,dc).trimEnd();const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h1 class=\"anime-hero-title\">'+escapeHtml(t)+'</h1><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
 }
 function openAnimeStreamFromHero(i){const a=window._animeHeroData?.[i];if(!a)return;openAnimeStream({id:a.id,title:a.title?.english||a.title?.romaji||a.title?.native||'Untitled',anilist_id:a.id,episodes:a.episodes,media_type:'anime'});}
 function showAnimeSortBar(){const b=document.getElementById('animeSortBar');if(b)b.style.display='flex';}
@@ -982,7 +982,9 @@ function probeServerHealth(sampleUrl) {
 // Dim every tab whose host is unreachable so users can see why it was skipped
 async function markDeadServerTabs(selector, servers) {
     await Promise.all(servers.map(async (s, i) => {
-        if (!s || s.external) return;
+        // External servers are probed too: they are never embedded, so this is
+        // the only way their tabs ever learn the host went down (e.g. HiAnime 521).
+        if (!s) return;
         const sample = s.movie ? s.movie(1) : s.url(1, 1, 'sub');
         if (await probeServerHealth(sample)) return;
         const tab = document.querySelector(selector + '[data-server="' + i + '"]');
@@ -1005,7 +1007,8 @@ async function firstLiveServerIndex(servers, startIndex) {
     return -1;
 }
 
-// Streaming servers configuration (ad-free, 1080p - verified working)
+// Streaming servers configuration. Providers run their own ads: our sandboxed
+// embeds contain them, and providers that refuse the sandbox open in a new tab.
 const STREAMING_SERVERS = [
     {
         // Default: verified playing inside our sandboxed iframe (its player
@@ -1321,6 +1324,12 @@ window.addEventListener("DOMContentLoaded", (ev) => {
     setupHeaderControls();
     setupSideMenu();
     setupNavigation();
+
+    // Flag server tabs whose host is unreachable — including external/new-tab
+    // servers, which are otherwise never health-checked. Results are cached in
+    // _hostHealth, so loadServer/loadAnimeServer reuse them.
+    markDeadServerTabs('.server-tab', STREAMING_SERVERS);
+    markDeadServerTabs('.anime-server-tab', ANIME_SERVERS);
 
     // Genre hub delegation (setGenre('X') onclicks were removed; buttons use data-genre)
     document.addEventListener('click', (e) => {
@@ -2176,7 +2185,9 @@ function showSpotSlide(i) {
     const gnames = (m.genre_ids || [])
         .map(id => (genres.find(g => g.id === id) || {}).name)
         .filter(Boolean).slice(0, 3).join(' \u00b7 ');
-    const desc = escapeHtml((m.overview || '').substring(0, 180));
+    const rawDesc = (m.overview || '').substring(0, 180);
+    const cut = rawDesc.lastIndexOf(' ');
+    const desc = escapeHtml((cut > 60 ? rawDesc.slice(0, cut) : rawDesc).trimEnd());
     const bg = 'https://image.tmdb.org/t/p/w1280' + m.backdrop_path;
     const dots = _spotData.map((_, j) => '<span class="hero-dot ' + (j === i ? 'active' : '') + '" onclick="spotlightGo(' + j + ')"></span>').join('');
     el.innerHTML = `
