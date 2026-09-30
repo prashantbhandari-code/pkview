@@ -476,7 +476,10 @@ function openAnimeStream(item) {
         (i) => !ANIME_SERVERS[i].external
     );
     currentAnimeEpisode = 1;
-    currentAnimeTotalEpisodes = item.episodes || 12;
+    // Grid cards store '?' when AniList has no episode count — a truthy
+    // string that survives `|| 12` and turns Math.min into NaN (empty select).
+    const epsInt = parseInt(item.episodes, 10);
+    currentAnimeTotalEpisodes = Number.isFinite(epsInt) && epsInt > 0 ? epsInt : 12;
     currentAnimeLang = 'dub';
     const modal = document.getElementById('streamModal');
     const title = document.getElementById('streamTitle');

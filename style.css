@@ -1578,7 +1578,7 @@ hr {
 .anime-server-tab {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.68);
   font-size: 0.85rem;
   font-weight: 500;
   padding: 12px 18px;
@@ -1619,6 +1619,13 @@ hr {
   gap: 16px;
   flex-wrap: wrap;
   border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Label+select wrap as one unit so a narrow modal never separates them */
+.select-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .season-selector {
@@ -1871,15 +1878,6 @@ body.light-theme .trailer-btn.download-btn:hover {
 .anime-server-tab.server-dead {
   text-decoration: line-through;
   text-decoration-color: rgba(255, 107, 53, 0.7);
-}
-
-.server-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  padding: 0;
-  background-color: #16213e;
-  overflow-x: auto;
 }
 
 /* Header Controls */
@@ -2496,7 +2494,7 @@ body.light-theme .anime-server-tabs {
 }
 
 body.light-theme .anime-server-tab {
-  color: rgba(0, 0, 0, 0.5);
+  color: rgba(0, 0, 0, 0.62);
 }
 
 body.light-theme .anime-server-tab:hover {
@@ -3437,9 +3435,9 @@ body.light-theme .nepali-banner-btn:hover {
     background: #a93226;
 }
 
-/* Section title */
+/* Section title - margin only. The old color: var(--primary-color) here
+   painted headings the same navy as the page background. */
 .section-title {
-    color: var(--primary-color);
     margin-bottom: 8px;
 }
 
