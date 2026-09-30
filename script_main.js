@@ -209,17 +209,25 @@ const DOCU_MOVIE_url = buildDiscoverUrl('movie', { with_genres: 99, sort_by: 'po
 // route (vidnest.fun/anime/{anilistId}/{ep}/hindi).
 const ANIME_SERVERS = [
     {
-        name: 'MegaPlay',
-        langs: ['sub', 'dub'],
-        url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
-    },
-    {
+        // The only anime embed that still plays inside our sandboxed iframe
+        // (verified: One Piece streams fine) - default server.
         name: 'Megavid',
         langs: ['sub', 'dub'],
         url: (id, ep, lang) => `https://megavid.buzz/ani/${id}/${ep || 1}/${lang || 'sub'}`
     },
     {
+        // Detects our sandboxed iframe and refuses to play ("Sandboxed our
+        // player is not allowed"), so it opens in a new tab where its ads
+        // stay contained.
+        name: 'MegaPlay',
+        external: true,
+        langs: ['sub', 'dub'],
+        url: (id, ep, lang) => `https://megaplay.buzz/stream/ani/${id}/${ep || 1}/${lang || 'sub'}`
+    },
+    {
+        // Same sandbox refusal ("Please Disable Sandbox") - new tab only.
         name: 'VidNest',
+        external: true,
         langs: ['sub', 'dub', 'hindi'],
         url: (id, ep, lang) => `https://vidnest.fun/anime/${id}/${ep || 1}/${lang || 'sub'}`
     },
@@ -997,36 +1005,12 @@ async function firstLiveServerIndex(servers, startIndex) {
 // Streaming servers configuration (ad-free, 1080p - verified working)
 const STREAMING_SERVERS = [
     {
-        name: 'VidNest',
-        movie: (id) => `https://vidnest.fun/movie/${id}`,
-        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
-        // Default server: verified reachable and embeddable when VixSrc sat
-        // behind a Cloudflare challenge that breaks cross-site embedding.
-        langMode: LANG_MODE.NONE
-    },
-    {
-        name: 'VixSrc',
-        // Player includes a built-in Download button where the source provides one
-        movie: (id) => `https://vixsrc.to/movie/${id}`,
-        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
-        // Documented: "lang - Sets preferred language for the audio track".
-        // Only server that honours the language selector for audio — promoted
-        // back to default when its Cloudflare wall lifts (probe flags it dead
-        // today: 403s on the embed document).
-        langMode: LANG_MODE.AUDIO
-
-    },
-    {
+        // Default: verified playing inside our sandboxed iframe (its player
+        // renders in the top document rather than nested frames).
         name: 'EmbedMaster',
         movie: (id) => `https://embedmaster.link/movie/${id}`,
         tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
-    },
-    {
-        name: 'YapGrid',
-        movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
-        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.SUBTITLE
     },
     {
         name: 'VidLink',
@@ -1047,12 +1031,28 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'VidSrc.su',
-        // Verified live and streaming real video (Inception auto-played
-        // top-level); no frame-blocking headers; tv/s/e paths 200.
-        movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
-        tv: (id, s, e) => `https://vidsrc.su/embed/tv/${id}/${s}/${e}`,
+        name: 'VidSrc.to',
+        // Verified reachable, no frame-blocking headers, tv paths 200.
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
+    },
+    {
+        name: 'YapGrid',
+        movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
+        tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.SUBTITLE
+    },
+    {
+        name: 'VixSrc',
+        // Player includes a built-in Download button where the source provides one.
+        // Documented: "lang - Sets preferred language for the audio track".
+        // Only server that honours the language selector for audio - but it
+        // sits behind a Cloudflare challenge today (probe flags it dead), so
+        // the tolerant embeds above are the defaults until that lifts.
+        movie: (id) => `https://vixsrc.to/movie/${id}`,
+        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.AUDIO
     },
     {
         name: 'VidSrc',
@@ -1061,29 +1061,46 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'VidSrc.to',
-        // Verified reachable, no frame-blocking headers, tv paths 200.
-        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
-        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
         name: 'VidSrc.cc',
-        // Verified reachable; probe flags it if it flakes.
+        // Reachable when not flaking; probe flags it if it 403s again.
         movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
         tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'Cinejoy',
+        // Silently shows an empty player inside a sandboxed iframe (its anime
+        // route prints "Please Disable Sandbox"). Its ad redirects need to
+        // escape the sandbox, so it opens in a new tab instead - our sandbox
+        // is what stops providers hijacking the page.
+        name: 'VidNest',
+        external: true,
+        movie: (id) => `https://vidnest.fun/movie/${id}`,
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Streams real video, but refuses to run inside a sandboxed iframe
+        // (shows its own "Restricted Embed Detected" notice) because its
+        // ad redirects need to escape. Sandboxing the embed is what stops
+        // providers hijacking the page, so this one opens in a new tab -
+        // its ads stay contained there.
+        name: 'VidSrc.su',
+        external: true,
+        movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.su/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
         // TMDB-keyed watch routes, read from cinejoy's own bundle:
         // /watch/movie/[id] and /watch/tv/[id]/[season]/[episode].
         // The site sends X-Frame-Options: DENY, so it opens in a new tab.
+        name: 'Cinejoy',
         external: true,
         movie: (id) => `https://cinejoy.pk/watch/movie/${id}`,
         tv: (id, s, e) => `https://cinejoy.pk/watch/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     }
+
 ];
 
 function serverLangMode(server) {
@@ -1150,8 +1167,12 @@ function renderExternalServerHint(server, prevServer) {
 // Remember the last server the user played so the next title opens on it.
 // v2: server order changed when dead providers were swapped out — a saved
 // index from the old list would point at the wrong server.
-const LAST_SERVER_KEY = 'pkview_last_server_v2';
-const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server';
+// v3: order changed again - EmbedMaster is the default and sandbox refusers
+// (VidNest, VidSrc.su, Cinejoy) open in new tabs. Old saved indexes invalid.
+const LAST_SERVER_KEY = 'pkview_last_server_v3';
+// v2: anime servers reordered - Megavid, the only sandbox-tolerant embed,
+// is now the default, so a saved index from the old list points elsewhere.
+const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server_v2';
 
 function rememberServer(index, key = LAST_SERVER_KEY) {
     try { localStorage.setItem(key, String(index)); } catch (e) { /* storage unavailable */ }
@@ -2774,8 +2795,8 @@ function openStream(item, mediaType) {
 
     currentStreamItem = item;
     if (mediaType) currentStreamItem.media_type = mediaType;
-    // Open on the server the user last played (falls back to VixSrc, the only
-    // server that honours the language selector for audio). Never recall an
+    // Open on the server the user last played (EmbedMaster by default; VixSrc
+    // honours the language selector for audio when saved). Never recall an
     // external server — it would pop a window instead of embedding.
     currentServerIndex = recallServer(STREAMING_SERVERS.length, LAST_SERVER_KEY,
         (i) => STREAMING_SERVERS[i] && !STREAMING_SERVERS[i].external);

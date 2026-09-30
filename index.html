@@ -23,7 +23,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
-    <link rel="stylesheet" href="style.css?v=20260929f" />
+    <link rel="stylesheet" href="style.css?v=20260930b" />
     <title>PKVIEW - Free Movie & TV Streaming</title>
   </head>
 
@@ -373,7 +373,7 @@
           <button class="sports-server-tab" data-server="3" onclick="switchSportsServer(3)">TopEmbed</button>
         </div>
         <div class="live-player-frame">
-          <iframe id="livePlayerFrame" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+          <iframe id="livePlayerFrame" src="" frameborder="0" allowfullscreen allow="autoplay; encrypted-media" sandbox="allow-scripts allow-forms allow-popups"></iframe>
         </div>
       </div>
     </section>
@@ -542,22 +542,23 @@
           </div>
         </div>
         <div class="server-tabs">
-          <button class="server-tab active" data-server="0">VidNest</button>
-          <button class="server-tab" data-server="1">VixSrc</button>
-          <button class="server-tab" data-server="2">EmbedMaster</button>
-          <button class="server-tab" data-server="3">YapGrid</button>
-          <button class="server-tab" data-server="4">VidLink</button>
-          <button class="server-tab" data-server="5">VidPhantom</button>
-          <button class="server-tab" data-server="6">2Embed</button>
-          <button class="server-tab" data-server="7">VidSrc.su</button>
-          <button class="server-tab" data-server="8">VidSrc</button>
-          <button class="server-tab" data-server="9">VidSrc.to</button>
-          <button class="server-tab" data-server="10">VidSrc.cc</button>
+          <button class="server-tab active" data-server="0">EmbedMaster</button>
+          <button class="server-tab" data-server="1">VidLink</button>
+          <button class="server-tab" data-server="2">VidPhantom</button>
+          <button class="server-tab" data-server="3">2Embed</button>
+          <button class="server-tab" data-server="4">VidSrc.to</button>
+          <button class="server-tab" data-server="5">YapGrid</button>
+          <button class="server-tab" data-server="6">VixSrc</button>
+          <button class="server-tab" data-server="7">VidSrc</button>
+
+          <button class="server-tab" data-server="8">VidSrc.cc</button>
+          <button class="server-tab" data-server="9">VidNest</button>
+          <button class="server-tab" data-server="10">VidSrc.su</button>
           <button class="server-tab" data-server="11">Cinejoy</button>
         </div>
         <div class="server-tabs anime-server-tabs" id="animeServerTabs" style="display:none;">
-          <button class="anime-server-tab active" data-server="0">MegaPlay</button>
-          <button class="anime-server-tab" data-server="1">Megavid</button>
+          <button class="anime-server-tab active" data-server="0">Megavid</button>
+          <button class="anime-server-tab" data-server="1">MegaPlay</button>
           <button class="anime-server-tab" data-server="2">VidNest</button>
           <button class="anime-server-tab" data-server="3">HiAnime</button>
           <button class="anime-server-tab" data-server="4">Miruro</button>
@@ -573,7 +574,7 @@
         </div>
         <div class="player-hint" id="playerHint" style="display:none;"></div>
         <div class="stream-player">
-          <iframe id="streamFrame" src="" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+          <iframe id="streamFrame" src="" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
           <div class="server-error" id="serverError" style="display:none;">
             <p>⚠️ This server is currently unavailable. Please try another server.</p>
           </div>
@@ -612,6 +613,6 @@
     </nav>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-    <script src="script_main.js?v=20260929f"></script>
+    <script src="script_main.js?v=20260930b"></script>
   </body>
 </html>
