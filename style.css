@@ -446,7 +446,7 @@ main > .error-state {
   border-color: rgba(233, 69, 96, 0.3);
 }
 
-.content-grid .movie img, .content-grid .tvshow img, .content-grid .anime-card img {
+.movie img, .tvshow img, .content-grid .movie img, .content-grid .tvshow img, .content-grid .anime-card img {
   width: 100%;
   height: 230px;
   object-fit: cover;
@@ -632,7 +632,7 @@ body.light-theme .movie-info span.nr {
   border-color: rgba(233, 69, 96, 0.3);
 }
 
-.content-grid .movie img, .content-grid .tvshow img, .content-grid .anime-card img {
+.movie img, .tvshow img, .content-grid .movie img, .content-grid .tvshow img, .content-grid .anime-card img {
   width: 100%;
   height: 230px;
   object-fit: cover;

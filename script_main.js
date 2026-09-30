@@ -120,7 +120,7 @@ function getStudio(a){if(!a.studios?.nodes)return '';const m=a.studios.nodes.fin
 
 let _heroInterval=null,_heroIdx=0;
 function renderAnimeHero(){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData||!window._animeHeroData.length||currentSection!=='anime'){if(el)el.style.display='none';return;}el.style.display='block';_heroIdx=0;showHeroSlide(0);if(_heroInterval)clearInterval(_heroInterval);_heroInterval=setInterval(()=>{_heroIdx=(_heroIdx+1)%window._animeHeroData.length;showHeroSlide(_heroIdx);},8000);}
-function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h2 class="anime-hero-title">'+escapeHtml(t)+'</h2><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
+function showHeroSlide(i){const el=document.getElementById('animeHero');if(!el||!window._animeHeroData)return;const a=window._animeHeroData[i];if(!a)return;const t=a.title?.english||a.title?.romaji||a.title?.native||'',b=a.bannerImage||'',d=(a.description||'').replace(/<[^>]*>/g,'').substring(0,180),sc=a.averageScore?(a.averageScore/10).toFixed(1):'?',g=(a.genres||[]).slice(0,4).join(' \u00b7 ');const sty=b?'background-image:linear-gradient(rgba(0,0,0,0.3),rgba(0,0,0,0.8)),url('+b+')':'background:linear-gradient(135deg,#16213e,#0f3460)';const dots=window._animeHeroData.map((_,j)=>'<span class="'+(j===i?'hero-dot active':'hero-dot')+'" onclick="showHeroSlide('+j+')"></span>').join('');el.innerHTML='<div class="anime-hero-slide" style="'+sty+'"><div class="anime-hero-content"><span class="anime-hero-format">'+escapeHtml(a.format||'')+'</span><h1 class=\"anime-hero-title\">'+escapeHtml(t)+'</h1><div class="anime-hero-meta"><span class="anime-hero-score">\u2605 '+sc+'</span><span> \u00b7 '+(a.episodes||'?')+' eps</span><span> \u00b7 '+escapeHtml(a.status||'')+'</span></div><p class="anime-hero-desc">'+escapeHtml(d)+'...</p><div class="anime-hero-genres">'+escapeHtml(g)+'</div><button class="anime-hero-watch" onclick="openAnimeStreamFromHero('+i+')">\u25B6 Watch Now</button></div><div class="anime-hero-dots">'+dots+'</div></div>';
 }
 function openAnimeStreamFromHero(i){const a=window._animeHeroData?.[i];if(!a)return;openAnimeStream({id:a.id,title:a.title?.english||a.title?.romaji||a.title?.native||'Untitled',anilist_id:a.id,episodes:a.episodes,media_type:'anime'});}
 function showAnimeSortBar(){const b=document.getElementById('animeSortBar');if(b)b.style.display='flex';}
@@ -483,6 +483,9 @@ function openAnimeStream(item) {
     const title = document.getElementById('streamTitle');
     title.textContent = item.title || 'Anime';
     modal.classList.add('active');
+    lastModalTrigger = document.activeElement;
+    const animeCloseBtn = modal.querySelector('.close-stream');
+    if (animeCloseBtn) animeCloseBtn.focus();
     document.body.style.overflow = 'hidden';
 
     // Hide movie/TV server tabs, show anime server tabs. The movie language
@@ -1445,6 +1448,19 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         }
     });
 
+    // Focus trap: keep Tab cycling inside the stream modal while it is open.
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Tab') return;
+        const modal = document.getElementById('streamModal');
+        if (!modal || !modal.classList.contains('active')) return;
+        const focusables = modal.querySelectorAll('button:not([disabled]), select, a[href], iframe, [tabindex]:not([tabindex="-1"])');
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
     // Close modal when clicking outside
     window.addEventListener('click', (e) => {
         if (e.target === document.getElementById('streamModal')) {
@@ -2164,7 +2180,7 @@ function showSpotSlide(i) {
     el.innerHTML = `
         <div class="spotlight-slide" style="background-image:linear-gradient(0deg,rgba(7,10,24,0.98) 0%,rgba(7,10,24,0.4) 32%,rgba(7,10,24,0) 58%),linear-gradient(90deg,rgba(7,10,24,0.92) 0%,rgba(7,10,24,0.45) 50%,rgba(7,10,24,0.05) 100%),url('${bg}')">
             <div class="spotlight-content">
-                <h2 class="spotlight-title">${title}</h2>
+                <h1 class="spotlight-title">${title}</h1>
                 <div class="spotlight-meta">
                     <span class="spotlight-score">\u2605 ${rating}/10</span>
                     ${year ? '<span class="pj-dotsep">\u00b7</span><span>' + year + '</span>' : ''}
@@ -2805,6 +2821,9 @@ function openStream(item, mediaType) {
     const langSelect = document.getElementById('languageSelect');
     title.textContent = item.title || item.name;
     modal.classList.add('active');
+    lastModalTrigger = document.activeElement;
+    const closeBtn = modal.querySelector('.close-stream');
+    if (closeBtn) closeBtn.focus();
     document.body.style.overflow = 'hidden';
 
     // Prefer Hindi dubbed audio by default
@@ -3032,6 +3051,9 @@ function toggleTrailer(key) {
 }
 
 // Close streaming modal
+// Element focused before the stream modal opened; focus returns here on close.
+let lastModalTrigger = null;
+
 function closeStream() {
     const modal = document.getElementById('streamModal');
     const streamFrame = document.getElementById('streamFrame');
@@ -3045,6 +3067,8 @@ function closeStream() {
     if (!modal) return;
 
     modal.classList.remove('active');
+    if (lastModalTrigger && typeof lastModalTrigger.focus === 'function') lastModalTrigger.focus();
+    lastModalTrigger = null;
     streamFrame.src = '';
     streamFrame.style.display = 'block';
     trailerFrame.src = '';

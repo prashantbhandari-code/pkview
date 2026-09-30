@@ -8,6 +8,10 @@
       content="PKVIEW - Stream movies, TV shows, anime, Bollywood, Nepali films, Korean dramas, and live sports for free."
     />
     <meta name="theme-color" content="#1a1a2e" />
+    <link rel="preconnect" href="https://image.tmdb.org" />
+    <link rel="preconnect" href="https://api.themoviedb.org" crossorigin />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <meta property="og:title" content="PKVIEW - Free Streaming" />
     <meta
       property="og:description"
@@ -23,7 +27,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
-    <link rel="stylesheet" href="style.css?v=20260930b" />
+    <link rel="stylesheet" href="style.css?v=20260930c" />
     <title>PKVIEW - Free Movie & TV Streaming</title>
   </head>
 
@@ -518,7 +522,7 @@
     </footer>
 
     <!-- Stream Modal -->
-    <div id="streamModal" class="stream-modal">
+    <div id="streamModal" class="stream-modal" role="dialog" aria-modal="true" aria-labelledby="streamTitle">
       <div class="stream-modal-content">
         <div class="stream-header">
           <h3 id="streamTitle">Movie Title</h3>
@@ -613,6 +617,6 @@
     </nav>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-    <script src="script_main.js?v=20260930b"></script>
+    <script src="script_main.js?v=20260930c"></script>
   </body>
 </html>
