@@ -339,7 +339,11 @@ function showAniListAnime(data) {
         const genres = (anime.genres || []).slice(0, 3);
         const desc = (anime.description || '').replace(/<[^>]*>/g, '').substring(0, 200);
         const status = anime.status || '';
-        const episodes = anime.episodes || '?';
+        // AniList leaves episodes null while a show airs — count episodes
+        // aired so far from the airing schedule (no extra request needed).
+        const airedSoFar = !anime.episodes && anime.nextAiringEpisode?.episode
+            ? Math.max(anime.nextAiringEpisode.episode - 1, 0) : 0;
+        const episodes = anime.episodes || airedSoFar || '?';
         const format = anime.format || '';
         const studio = getStudio(anime);
         const broadcast = getBroadcastNote(anime);
@@ -464,6 +468,53 @@ let currentAnimeEpisode = 1;
 let currentAnimeTotalEpisodes = 1;
 let currentAnimeLang = 'dub';
 
+// Build the Episode <select> for the stream modal (50-option cap, as before)
+function buildEpisodeOptions(episodeSelect, totalEps) {
+    episodeSelect.innerHTML = '';
+    const capped = Math.min(Number(totalEps) || 12, 50);
+    for (let i = 1; i <= capped; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `Episode ${i}`;
+        episodeSelect.appendChild(opt);
+    }
+}
+
+// AniList leaves episodes null for airing shows. Ask for the real count
+// once per title and cache it for the session; for airing shows fall back
+// to episodes aired so far.
+const animeEpisodeCountCache = new Map();
+async function resolveAnimeEpisodeCount(item) {
+    const id = Number(item.anilist_id || item.id);
+    if (!id) return null;
+    if (animeEpisodeCountCache.has(id)) return animeEpisodeCountCache.get(id);
+    const query = `query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+            episodes
+            nextAiringEpisode { episode }
+        }
+    }`;
+    try {
+        const res = await fetchWithTimeout(ANILIST_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ query, variables: { id } })
+        });
+        if (!res.ok) return null;
+        const json = await res.json();
+        const media = json.data?.Media;
+        if (!media) return null;
+        let count = media.episodes;
+        if (!count && media.nextAiringEpisode?.episode) {
+            count = media.nextAiringEpisode.episode - 1; // aired so far
+        }
+        if (count) animeEpisodeCountCache.set(id, count);
+        return count || null;
+    } catch (e) {
+        return null; // decorative enhancement — never block the player
+    }
+}
+
 // Open anime streaming modal with real embed servers
 function openAnimeStream(item) {
     addToHistory(item);
@@ -523,19 +574,25 @@ function openAnimeStream(item) {
     };
 
     // Episode selector
-    episodeSelect.innerHTML = '';
-    const totalEps = Math.min(currentAnimeTotalEpisodes || 12, 50);
-    for (let i = 1; i <= totalEps; i++) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `Episode ${i}`;
-        episodeSelect.appendChild(opt);
-    }
-    episodeSelect.value = 1;
+    buildEpisodeOptions(episodeSelect, currentAnimeTotalEpisodes);
+    episodeSelect.value = currentAnimeEpisode;
     episodeSelect.onchange = (e) => {
         currentAnimeEpisode = parseInt(e.target.value);
         loadAnimeServer(currentServerIndex);
     };
+
+    // The card stores '?' when the count is unknown — fetch the real number
+    // in the background and rebuild the selector when it arrives. Guarded so
+    // a stale response never lands in a modal now showing another title.
+    if (!Number.isFinite(parseInt(item.episodes, 10))) {
+        resolveAnimeEpisodeCount(item).then((count) => {
+            if (!count || currentStreamItem !== item) return;
+            currentAnimeTotalEpisodes = count;
+            buildEpisodeOptions(episodeSelect, count);
+            if (currentAnimeEpisode > count) currentAnimeEpisode = 1;
+            episodeSelect.value = currentAnimeEpisode;
+        });
+    }
 
     loadAnimeServer(currentServerIndex);
     loadTrailer(item);
