@@ -1453,7 +1453,9 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         if (e.key !== 'Tab') return;
         const modal = document.getElementById('streamModal');
         if (!modal || !modal.classList.contains('active')) return;
-        const focusables = modal.querySelectorAll('button:not([disabled]), select, a[href], iframe, [tabindex]:not([tabindex="-1"])');
+        // Skip display:none elements (hidden trailer iframe, anime's hidden
+        // language select) - otherwise Tab escapes the modal at its edges.
+        const focusables = [...modal.querySelectorAll('button:not([disabled]), select, a[href], iframe, [tabindex]:not([tabindex="-1"])')].filter(el => el.getClientRects().length > 0);
         if (!focusables.length) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
