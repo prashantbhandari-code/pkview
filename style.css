@@ -3865,8 +3865,9 @@ body::before {
   transform: scale(0.94);
 }
 
-/* The header brand only shows when the sidebar is collapsed away */
-.header-brand {
+/* The topbar brand hides on desktop - the sidebar owns the logo there.
+   Below 1024px the sidebar becomes a drawer and the topbar brand returns. */
+.pj-topbar .pj-brand {
   display: none;
 }
 
@@ -4012,7 +4013,7 @@ body.menu-open .side-backdrop {
     display: flex;
   }
 
-  .header-brand {
+  .pj-topbar .pj-brand {
     display: flex;
   }
 
@@ -4598,8 +4599,11 @@ body.light-theme .footer-bottom p {
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
-body.on-home .pj-dock {
-  display: flex;
+/* Dock pairs with the mobile layout - the topbar pill nav covers desktop */
+@media (max-width: 860px) {
+  body.on-home .pj-dock {
+    display: flex;
+  }
 }
 
 body.dock-hidden .pj-dock {
@@ -5039,6 +5043,15 @@ body.dock-hidden .pj-dock {
   max-width: 1360px;
   margin: 0 auto;
   padding: 4px 48px 16px;
+}
+
+/* Base (non-grid) cards render into #main for Movies/Shows/search and
+   need the same info padding the .content-grid variants get. */
+.movie-info, .tvshow-info {
+  padding: 0.7rem 0.8rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 /* Responsive */

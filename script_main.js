@@ -2184,7 +2184,8 @@ function showSpotSlide(i) {
         .filter(Boolean).slice(0, 3).join(' \u00b7 ');
     const rawDesc = (m.overview || '').substring(0, 180);
     const cut = rawDesc.lastIndexOf(' ');
-    const desc = escapeHtml((cut > 60 ? rawDesc.slice(0, cut) : rawDesc).trimEnd());
+    const clipped = cut > 60 ? rawDesc.slice(0, cut).trimEnd() : rawDesc.trimEnd();
+    const desc = escapeHtml(clipped) + (m.overview && m.overview.length > 180 ? '...' : '');
     const bg = 'https://image.tmdb.org/t/p/w1280' + m.backdrop_path;
     const dots = _spotData.map((_, j) => '<span class="hero-dot ' + (j === i ? 'active' : '') + '" onclick="spotlightGo(' + j + ')"></span>').join('');
     el.innerHTML = `
