@@ -2482,10 +2482,12 @@ body.light-theme .server-tab:hover {
   color: #333;
 }
 
+/* Active pill keeps the dark treatment - pink text on the pink
+   gradient is unreadable in light theme */
 body.light-theme .server-tab.active {
-  border-bottom-color: #ff1361;
-  background-color: rgba(255, 19, 97, 0.06);
-  color: #ff1361;
+  background: #141a2e;
+  border-color: transparent;
+  color: #fff;
 }
 
 body.light-theme .anime-server-tabs {
