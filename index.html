@@ -27,11 +27,25 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>" />
-    <link rel="stylesheet" href="style.css?v=20260930k" />
+    <link rel="stylesheet" href="style.css?v=20261001a" />
     <title>PKVIEW - Free Movie & TV Streaming</title>
   </head>
 
   <body>
+    <script>
+      // Pre-paint theme: saved choice wins, otherwise follow the OS preference.
+      // Runs before any content renders to avoid a dark flash on light themes.
+      (function () {
+        try {
+          var saved = localStorage.getItem('pkview_theme');
+          var light = saved === 'light' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+          if (light) {
+            document.body.classList.add('light-theme');
+            document.documentElement.style.colorScheme = 'light';
+          }
+        } catch (e) { /* storage blocked - stay dark */ }
+      })();
+    </script>
     <!-- Loading Spinner -->
     <div class="spinner-overlay" id="loadingSpinner">
       <div class="spinner"></div>
@@ -621,6 +635,6 @@
     </nav>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/js/all.min.js"></script>
-    <script src="script_main.js?v=20260930k"></script>
+    <script src="script_main.js?v=20261001a"></script>
   </body>
 </html>

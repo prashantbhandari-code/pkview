@@ -3189,8 +3189,11 @@ body.light-theme .sports-server-tab:hover {
   color: #333;
 }
 
+/* Pink text on the light gray strip was ~3.1:1 and inverted the hierarchy vs
+   the darker inactive labels; use the dark pill treatment like other tabs. */
 body.light-theme .sports-server-tab.active {
-  color: #ff1361;
+  color: #fff;
+  background: #141a2e;
   border-bottom-color: #ff1361;
 }
 
@@ -3466,6 +3469,14 @@ body.light-theme .live-match-card {
 
 body.light-theme .live-match-tag {
     color: #333;
+}
+
+body.light-theme .live-match-status {
+    color: #c0392b;
+}
+
+body.light-theme .nepali-banner-empty {
+    color: #666;
 }
 
 body.light-theme .live-match-league {

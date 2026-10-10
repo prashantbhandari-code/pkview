@@ -177,6 +177,35 @@ function preferHindiDubbed(items) {
         .map(entry => entry.item);
 }
 
+// --- Search ranking ---
+// TMDB's /search ignores with_original_language (it's discover-only), so the
+// section language preference is applied here as a ranking boost instead of an
+// API filter. Deep matches also sit pages down the list ("Jerry On Top" ranks
+// #54 for query "jerry"), so search fetches a window of pages first.
+const SEARCH_WINDOW_PAGES = 3;
+
+function searchRankScore(item, query, sectionLang) {
+    const title = String(item.title || item.name || '').toLowerCase();
+    const q = String(query || '').trim().toLowerCase();
+    let score = 0;
+    if (sectionLang && item.original_language === sectionLang) score += 100;
+    if (q && title) {
+        if (title === q) score += 10;
+        else if (title.startsWith(q)) score += 5;
+        else if (title.includes(q)) score += 2;
+    }
+    if (item.original_language === 'ne') score += 6;
+    score += hindiDubScore(item);
+    return score;
+}
+
+function rankSearchResults(items, query, sectionLang) {
+    return items
+        .map((item, index) => ({ item, index, score: searchRankScore(item, query, sectionLang) }))
+        .sort((a, b) => b.score - a.score || a.index - b.index)
+        .map(entry => entry.item);
+}
+
 function buildDiscoverUrl(mediaType, extraParams) {
     const base = mediaType === 'movie' ? 'discover/movie' : 'discover/tv';
     return tmdbUrl(base, { sort_by: 'popularity.desc', ...extraParams });
@@ -1848,7 +1877,90 @@ function showSkeletons() {
     main.appendChild(frag);
 }
 
+async function LoadSearchResults(url) {
+    lastUrl = url;
+    const main = document.querySelector('#main');
+    showSpinner();
+
+    try {
+        const parsed = new URL(url, window.location.origin);
+        const mediaType = parsed.pathname.includes('/search/tv') ? 'tv' : 'movie';
+        const query = parsed.searchParams.get('query') || '';
+        const sectionLang = parsed.searchParams.get('with_original_language') || '';
+        // Windowed search pagination: the `page` param is a logical page that
+        // covers SEARCH_WINDOW_PAGES TMDB pages (1 → TMDB 1-3, 2 → TMDB 4-6).
+        const logicalPage = Math.max(1, parseInt(parsed.searchParams.get('page'), 10) || 1);
+        const firstTmdbPage = (logicalPage - 1) * SEARCH_WINDOW_PAGES + 1;
+        const tmdbPages = Array.from({ length: SEARCH_WINDOW_PAGES }, (_, i) => firstTmdbPage + i);
+
+        const settled = await Promise.allSettled(tmdbPages.map(page => {
+            const pageUrl = new URL(parsed.href);
+            pageUrl.searchParams.set('page', page);
+            return fetchWithTimeout(pageUrl.href).then(res => {
+                if (!res.ok) throw new Error('API request failed');
+                return res.json();
+            });
+        }));
+
+        const fulfilled = settled.filter(entry => entry.status === 'fulfilled');
+        if (fulfilled.length === 0) throw new Error('API request failed');
+
+        const seen = new Set();
+        const merged = [];
+        let tmdbTotalPages = 1;
+        fulfilled.forEach(entry => {
+            const data = entry.value;
+            if (Number.isFinite(data.total_pages)) tmdbTotalPages = Math.max(tmdbTotalPages, data.total_pages);
+            (data.results || []).forEach(item => {
+                if (item.id == null || seen.has(item.id)) return;
+                seen.add(item.id);
+                merged.push(item);
+            });
+        });
+
+        if (merged.length === 0) {
+            hideSpinner();
+            main.innerHTML = `<div class="empty-state fade-in">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">🎬</div>
+        <p style="margin: 0 0 8px;">No results found</p>
+        <small style="color: #888;">Try a different search term or browse another section</small>
+      </div>`;
+            return;
+        }
+
+        const results = rankSearchResults(merged, query, sectionLang);
+        if (mediaType === 'tv') {
+            showTvShows(results);
+        } else {
+            showMovies(results);
+        }
+
+        currentPage = logicalPage;
+        nextPage = currentPage + 1;
+        prevPage = currentPage - 1;
+        totalPages = Math.ceil(tmdbTotalPages / SEARCH_WINDOW_PAGES);
+        if (window.currentBtn) window.currentBtn.innerText = currentPage;
+        const countEl = document.querySelector('.section-label .section-count');
+        if (countEl) countEl.textContent = results.length + ' titles';
+        if (window.prevBtn) window.prevBtn.classList.toggle('disabled', currentPage <= 1);
+        if (window.nextBtn) window.nextBtn.classList.toggle('disabled', currentPage >= totalPages);
+    } catch (error) {
+        hideSpinner();
+        console.error('Error loading search results:', error);
+        main.innerHTML = `
+        <div class="error-state">
+            <h2>⚠️ Failed to load content</h2>
+            <p>${escapeHtml(error.message || 'Unknown error')}</p>
+            <button onclick="LoadDataAndDisplay()" class="knowmore">Retry</button>
+        </div>
+        `;
+    }
+}
+
 async function LoadMovieOrTv(whichPage, url) {
+    if (typeof url === 'string' && url.includes('/search/')) {
+        return LoadSearchResults(url);
+    }
     lastUrl = url;
     let main = document.querySelector('#main');
     showSpinner();
@@ -2335,7 +2447,22 @@ function setupPillNav() {
 }
 
 // Per-section visibility for hero rows, My List, filters and the grid chrome
+// Re-entrancy guard: renderProviderRow/renderProw call applyPageChrome back,
+// and on Movies/Shows that re-enters ensureFilterOptions -> loadProviderOptions
+// -> renderProviderRow, which used to recurse until "Maximum call stack size
+// exceeded". Nested calls with the same section are redundant anyway.
+let _applyingPageChrome = false;
 function applyPageChrome(section) {
+    if (_applyingPageChrome) return;
+    _applyingPageChrome = true;
+    try {
+        applyPageChromeBody(section);
+    } finally {
+        _applyingPageChrome = false;
+    }
+}
+
+function applyPageChromeBody(section) {
     const isHome = section === 'home';
     const isBrowse = section === 'movies' || section === 'shows';
     const isMyList = section === 'mylist';
@@ -2621,10 +2748,46 @@ function renderProviderRow() {
 }
 
 // Theme toggle functionality
+const themeSystemMedia = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: light)')
+    : null;
+
+function resolvePreferredTheme() {
+    try {
+        const saved = localStorage.getItem('pkview_theme');
+        if (saved === 'light' || saved === 'dark') return saved;
+    } catch (e) {
+        // Storage blocked (private mode etc.) - fall through to system preference.
+    }
+    return themeSystemMedia && themeSystemMedia.matches ? 'light' : 'dark';
+}
+
+function applyTheme(theme) {
+    document.body.classList.toggle('light-theme', theme === 'light');
+    document.documentElement.style.colorScheme = theme === 'light' ? 'light' : 'dark';
+}
+
+// Saved choice wins; otherwise track the OS preference (including live changes
+// until the user picks a theme explicitly).
 function loadThemePreference() {
-    const savedTheme = localStorage.getItem('pkview_theme');
-    if (savedTheme === 'light') {
-        document.body.classList.add('light-theme');
+    applyTheme(resolvePreferredTheme());
+
+    if (!themeSystemMedia) return;
+    const onSystemChange = (e) => {
+        let saved = null;
+        try {
+            saved = localStorage.getItem('pkview_theme');
+        } catch (err) {
+            // treated as no explicit choice
+        }
+        if (saved !== 'light' && saved !== 'dark') {
+            applyTheme(e.matches ? 'light' : 'dark');
+        }
+    };
+    if (themeSystemMedia.addEventListener) {
+        themeSystemMedia.addEventListener('change', onSystemChange);
+    } else if (themeSystemMedia.addListener) {
+        themeSystemMedia.addListener(onSystemChange); // older Safari
     }
 }
 
@@ -2632,9 +2795,13 @@ function setupHeaderControls() {
     const themeToggle = document.getElementById('themeToggle');
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('light-theme');
-            const isLight = document.body.classList.contains('light-theme');
-            localStorage.setItem('pkview_theme', isLight ? 'light' : 'dark');
+            const next = document.body.classList.contains('light-theme') ? 'dark' : 'light';
+            applyTheme(next);
+            try {
+                localStorage.setItem('pkview_theme', next);
+            } catch (e) {
+                // Storage blocked - theme still applies for this visit.
+            }
         });
     }
 }
