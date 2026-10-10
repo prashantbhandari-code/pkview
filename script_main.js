@@ -1097,16 +1097,63 @@ async function firstLiveServerIndex(servers, startIndex) {
 
 // Streaming servers configuration. Providers run their own ads: servers marked
 // external open in a new tab so their ads and redirects stay off our page.
+// Order (probed 2026-10-10, headless Chromium): verified-working first, then
+// partial loads, then hosts unreachable from the probe network (they stay last
+// — markDeadServerTabs dims them per-visitor anyway, and they may work elsewhere).
 const STREAMING_SERVERS = [
     {
-        // Default: verified playing inside the in-page player iframe (its
-        // player renders in the top document rather than nested frames).
+        // Verified: player page loads with the correct title. Default.
+        name: '2Embed',
+        movie: (id) => `https://2embed.skin/embed/${id}`,
+        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Verified: plays real video; its ad redirects need to escape, so it
+        // opens in a new tab (keeping them off our page).
+        name: 'VidNest',
+        external: true,
+        movie: (id) => `https://vidnest.fun/movie/${id}`,
+        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Player page loads (redirects to embdmstrplayer.com) but no video
+        // surfaced inside the probe window - kept high as a fallback.
         name: 'EmbedMaster',
         movie: (id) => `https://embedmaster.link/movie/${id}`,
         tv: (id, s, e) => `https://embedmaster.link/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
+        // Player includes a built-in Download button where the source provides one.
+        // Documented: "lang - Sets preferred language for the audio track".
+        // Only server that honours the language selector for audio; sits behind a
+        // Cloudflare challenge for bots but loads in a normal browser.
+        name: 'VixSrc',
+        movie: (id) => `https://vixsrc.to/movie/${id}`,
+        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.AUDIO
+    },
+    {
+        // Embed loads and chains through vsembed.ru, but nested source frames
+        // stayed blank in the probe.
+        name: 'VidSrc.to',
+        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Page loads ("no available servers" depends on the title); embed
+        // refusal ("Restricted Embed Detected") - opens in a new tab.
+        name: 'VidSrc.su',
+        external: true,
+        movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
+        tv: (id, s, e) => `https://vidsrc.su/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Unreachable from the 2026-10-10 probe network (connection reset).
         name: 'VidLink',
         movie: (id) => `https://vidlink.pro/movie/${id}`,
         tv: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
@@ -1119,34 +1166,10 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: '2Embed',
-        movie: (id) => `https://2embed.skin/embed/${id}`,
-        tv: (id, s, e) => `https://2embed.skin/embed/${id}?s=${s}&e=${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
-        name: 'VidSrc.to',
-        // Verified reachable, no frame-blocking headers, tv paths 200.
-        movie: (id) => `https://vidsrc.to/embed/movie/${id}`,
-        tv: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
         name: 'YapGrid',
         movie: (id) => `https://yapgrid.com/embed/movie/${id}`,
         tv: (id, s, e) => `https://yapgrid.com/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.SUBTITLE
-    },
-    {
-        name: 'VixSrc',
-        // Player includes a built-in Download button where the source provides one.
-        // Documented: "lang - Sets preferred language for the audio track".
-        // Only server that honours the language selector for audio - but it
-        // sits behind a Cloudflare challenge today (probe flags it dead), so
-        // the tolerant embeds above are the defaults until that lifts.
-        movie: (id) => `https://vixsrc.to/movie/${id}`,
-        tv: (id, s, e) => `https://vixsrc.to/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.AUDIO
     },
     {
         name: 'VidSrc',
@@ -1156,36 +1179,13 @@ const STREAMING_SERVERS = [
     },
     {
         name: 'VidSrc.cc',
-        // Reachable when not flaking; probe flags it if it 403s again.
         movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
         tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
-        // Silently shows an empty player when embedded (its anime route
-        // prints "Please Disable Sandbox"). Its ad redirects need to escape,
-        // so it opens in a new tab instead - keeping them off our page.
-        name: 'VidNest',
-        external: true,
-        movie: (id) => `https://vidnest.fun/movie/${id}`,
-        tv: (id, s, e) => `https://vidnest.fun/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
-        // Streams real video, but refuses to run when embedded (shows its
-        // own "Restricted Embed Detected" notice) because its ad redirects
-        // need to escape. Opens in a new tab so those redirects stay off
-        // our page.
-        name: 'VidSrc.su',
-        external: true,
-        movie: (id) => `https://vidsrc.su/embed/movie/${id}`,
-        tv: (id, s, e) => `https://vidsrc.su/embed/tv/${id}/${s}/${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
-        // TMDB-keyed watch routes, read from cinejoy's own bundle:
-        // /watch/movie/[id] and /watch/tv/[id]/[season]/[episode].
-        // The site sends X-Frame-Options: DENY, so it opens in a new tab.
+        // TMDB-keyed watch routes on cinejoy.pk. Probe network couldn't reach
+        // the host at all; X-Frame-Options: DENY when it is up, so new tab.
         name: 'Cinejoy',
         external: true,
         movie: (id) => `https://cinejoy.pk/watch/movie/${id}`,
