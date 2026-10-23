@@ -2958,7 +2958,12 @@ function toggleFavorite(id, type) {
         favorites.push(item);
     }
 
-    localStorage.setItem('pkview_favorites', JSON.stringify(favorites));
+    // Keep favorites usable for this session if browser storage is blocked or full.
+    try {
+        localStorage.setItem('pkview_favorites', JSON.stringify(favorites));
+    } catch (error) {
+        console.warn('Could not persist favorites in browser storage:', error);
+    }
     updateFavoriteButtons();
 }
 
@@ -3337,7 +3342,11 @@ function closeSeasonModal() {
 // Clear favorites
 function clearFavorites() {
     favorites = [];
-    localStorage.removeItem('pkview_favorites');
+    try {
+        localStorage.removeItem('pkview_favorites');
+    } catch (error) {
+        console.warn('Could not clear persisted favorites from browser storage:', error);
+    }
     const favSection = document.getElementById('favoritesSection');
     if (favSection) favSection.style.display = 'none';
     updateFavoriteButtons();
