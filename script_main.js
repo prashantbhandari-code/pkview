@@ -933,6 +933,13 @@ const SPORTS_SERVERS = [
             const q = encodeURIComponent(match.tag || match.league || 'live');
             return `https://topembed.pw/video/${q}`;
         }
+    },
+    {
+        name: 'play4u.org',
+        getUrl: (match) => {
+            const q = encodeURIComponent(match.tag || match.league || 'live sports');
+            return `https://play4u.org/embed/${q}`;
+        }
     }
 ];
 
@@ -1181,6 +1188,12 @@ const STREAMING_SERVERS = [
         name: 'VidSrc.cc',
         movie: (id) => `https://vidsrc.cc/v2/embed/movie/${id}`,
         tv: (id, s, e) => `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        name: 'play4u.org',
+        movie: (id) => `https://play4u.org/movie/${id}`,
+        tv: (id, s, e) => `https://play4u.org/tv/${s}/${e}`,
         langMode: LANG_MODE.NONE
     },
     {
