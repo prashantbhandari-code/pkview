@@ -1557,6 +1557,22 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         }
     });
 
+    // Arrow keys step through the server pills of whichever strip has focus, so
+    // the servers hidden past the right edge are reachable without a mouse.
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        const active = document.activeElement;
+        const strip = active && active.closest ? active.closest('.server-tabs') : null;
+        if (!strip) return;
+        const pills = [...strip.querySelectorAll('button')].filter(el => el.getClientRects().length > 0);
+        const at = pills.indexOf(active);
+        if (at === -1) return;
+        e.preventDefault();
+        const step = e.key === 'ArrowRight' ? 1 : -1;
+        pills[(at + step + pills.length) % pills.length].focus();
+        keepActiveTabVisible(document.activeElement);
+    });
+
     // Focus trap: keep Tab cycling inside the stream modal while it is open.
     document.addEventListener('keydown', (e) => {
         if (e.key !== 'Tab') return;
@@ -1612,6 +1628,7 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         tabScrollFrame = requestAnimationFrame(() => {
             tabScrollFrame = null;
             keepActiveTabVisible(document.querySelector('.server-tab.active'));
+            document.querySelectorAll('.server-tabs').forEach(updateStripScrollCue);
         });
     });
 
@@ -3088,6 +3105,7 @@ function openStream(item, mediaType) {
     const closeBtn = modal.querySelector('.close-stream');
     if (closeBtn) closeBtn.focus();
     document.body.style.overflow = 'hidden';
+    initServerStripCues();
 
     // Prefer Hindi dubbed audio by default
     langSelect.value = 'hi';
@@ -3193,6 +3211,40 @@ function keepActiveTabVisible(activeTab) {
     // in the same tick as the class change is a few pixels off.
     requestAnimationFrame(() => {
         activeTab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' });
+        updateStripScrollCue(strip);
+    });
+}
+
+// The strip hides roughly half its pills on a laptop and its scrollbar is
+// deliberately invisible, so the servers past the right edge look like they do
+// not exist. Fade whichever edge still has pills behind it, and let a plain
+// vertical wheel scroll the strip sideways instead of requiring shift+wheel.
+function updateStripScrollCue(strip) {
+    if (!strip) return;
+    const max = strip.scrollWidth - strip.clientWidth;
+    strip.classList.toggle('can-scroll-left', strip.scrollLeft > 4);
+    strip.classList.toggle('can-scroll-right', max > 4 && strip.scrollLeft < max - 4);
+}
+
+function initServerStripCues() {
+    document.querySelectorAll('.server-tabs').forEach(strip => {
+        updateStripScrollCue(strip);
+        if (strip.dataset.cuesBound) return;
+        strip.dataset.cuesBound = '1';
+        strip.addEventListener('scroll', () => updateStripScrollCue(strip), { passive: true });
+        strip.addEventListener('wheel', (e) => {
+            // Only hijack the wheel when the strip actually overflows and the
+            // gesture is vertical — trackpad horizontal panning stays native.
+            if (strip.scrollWidth <= strip.clientWidth) return;
+            if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+            // At either end the strip cannot move, so let the modal itself scroll
+            // instead of swallowing the gesture.
+            const max = strip.scrollWidth - strip.clientWidth;
+            if ((e.deltaY < 0 && strip.scrollLeft <= 0) || (e.deltaY > 0 && strip.scrollLeft >= max - 1)) return;
+            e.preventDefault();
+            strip.scrollLeft += e.deltaY;
+            updateStripScrollCue(strip);
+        }, { passive: false });
     });
 }
 
@@ -3226,6 +3278,7 @@ function renderPinnedServerTab(pin) {
     let tab = document.getElementById('pinnedServerTab');
     if (!pin) {
         if (tab) tab.remove();
+        updateStripScrollCue(strip);
         return;
     }
     if (!tab) {
@@ -3241,6 +3294,7 @@ function renderPinnedServerTab(pin) {
     }
     tab.textContent = pin.name;
     tab.title = pin.name + ': ' + pin.note;
+    updateStripScrollCue(strip);
 }
 
 function setPinnedTabActive(on) {
