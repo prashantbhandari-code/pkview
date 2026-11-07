@@ -1466,6 +1466,38 @@ hr {
   box-shadow: 0 6px 18px rgba(255, 19, 97, 0.35);
 }
 
+/* Pinned per-title server pill (see PINNED_STREAMS). Same shape as a server
+   pill, but a separate class because it is not an index into the server list. */
+.server-tab-pin {
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.server-tab-pin:hover {
+  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.server-tab-pin.active {
+  color: #fff;
+  background: linear-gradient(135deg, #ff1361 0%, #ff4d6a 55%, #ff7a3d 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(255, 19, 97, 0.35), 0 1px 0 rgba(255, 255, 255, 0.15) inset;
+}
+
 /* Server Tabs - pill design */
 .server-tabs {
   display: flex;
@@ -1662,6 +1694,18 @@ hr {
   background: #000;
 }
 
+/* Short viewports: a 16:9 player at the 1080px cap is 607px tall, which pushes
+   the whole modal past a 800px-tall laptop screen and cuts the player off at
+   the fold. Shrink the modal WIDTH instead of the player height — the height
+   budget is the header, tabs, hint and button rows (~372px), so the player
+   keeps its true 16:9 box and the provider never has to stretch or crop it. */
+@media screen and (min-width: 769px) {
+  .stream-modal-content {
+    max-width: min(1080px, max(480px, calc((100vh - 396px) * 16 / 9)));
+    max-width: min(1080px, max(480px, calc((100dvh - 396px) * 16 / 9)));
+  }
+}
+
 /* Trailer Section */
 .trailer-section {
   padding: 20px 22px 24px;
@@ -1809,6 +1853,11 @@ body.light-theme .trailer-btn.download-btn:hover {
     padding: 12px 14px;
     font-size: 0.75rem;
     min-width: 80px;
+  }
+
+  .server-tab-pin {
+    padding: 12px 14px;
+    font-size: 0.75rem;
   }
 
   .season-select-container {

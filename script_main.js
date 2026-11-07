@@ -933,13 +933,6 @@ const SPORTS_SERVERS = [
             const q = encodeURIComponent(match.tag || match.league || 'live');
             return `https://topembed.pw/video/${q}`;
         }
-    },
-    {
-        name: 'play4u.org',
-        getUrl: (match) => {
-            const q = encodeURIComponent(match.tag || match.league || 'live sports');
-            return `https://play4u.org/embed/${q}`;
-        }
     }
 ];
 
@@ -1191,18 +1184,24 @@ const STREAMING_SERVERS = [
         langMode: LANG_MODE.NONE
     },
     {
-        name: 'play4u.org',
-        movie: (id) => `https://play4u.org/movie/${id}`,
-        tv: (id, s, e) => `https://play4u.org/tv/${s}/${e}`,
-        langMode: LANG_MODE.NONE
-    },
-    {
         // TMDB-keyed watch routes on cinejoy.pk. Probe network couldn't reach
         // the host at all; X-Frame-Options: DENY when it is up, so new tab.
         name: 'Cinejoy',
         external: true,
         movie: (id) => `https://cinejoy.pk/watch/movie/${id}`,
         tv: (id, s, e) => `https://cinejoy.pk/watch/tv/${id}/${s}/${e}`,
+        langMode: LANG_MODE.NONE
+    },
+    {
+        // Abyss (abyss.to / abyssplayer.com) is a video host, not a catalogue:
+        // its player is keyed by a per-upload slug (/e/{slug}, ?v={slug}), and
+        // /movie/{id} + /embed/movie/{id} answer 404, so no TMDB-keyed URL can
+        // be built from it. This tab is backed by moviesapi.to (VidSpark), the
+        // TMDB-keyed player that answered 200 with no X-Frame-Options or
+        // frame-ancestors block on 2026-11-07 (movie and /tv/{id}/{s}/{e}).
+        name: 'Abyss',
+        movie: (id) => `https://moviesapi.to/movie/${id}`,
+        tv: (id, s, e) => `https://moviesapi.to/tv/${id}/${s}/${e}`,
         langMode: LANG_MODE.NONE
     }
 
@@ -1274,7 +1273,9 @@ function renderExternalServerHint(server, prevServer) {
 // index from the old list would point at the wrong server.
 // v3: order changed again - EmbedMaster is the default and embed refusers
 // (VidNest, VidSrc.su, Cinejoy) open in new tabs. Old saved indexes invalid.
-const LAST_SERVER_KEY = 'pkview_last_server_v3';
+// v4: play4u.org dropped - its player is IMDb-id keyed (watch/{tt-id}) and
+// 404s for TMDB ids, so every tab after it shifted down one.
+const LAST_SERVER_KEY = 'pkview_last_server_v4';
 // v2: anime servers reordered - Megavid, the only embed that tolerated
 // is now the default, so a saved index from the old list points elsewhere.
 const LAST_ANIME_SERVER_KEY = 'pkview_last_anime_server_v2';
@@ -1601,6 +1602,17 @@ window.addEventListener("DOMContentLoaded", (ev) => {
         const server = ANIME_SERVERS[tabServerIndex(tab, i)];
         if (server) annotateServerTab(tab, server);
         tab.addEventListener('click', () => switchAnimeServer(tabServerIndex(tab, i)));
+    });
+
+    // The server strip's visible width changes with the window, so a pill that
+    // was on screen can end up clipped after a resize.
+    let tabScrollFrame = null;
+    window.addEventListener('resize', () => {
+        if (tabScrollFrame) return;
+        tabScrollFrame = requestAnimationFrame(() => {
+            tabScrollFrame = null;
+            keepActiveTabVisible(document.querySelector('.server-tab.active'));
+        });
     });
 
     // Language selector — reload player with preferred audio language
@@ -3098,7 +3110,13 @@ function openStream(item, mediaType) {
         document.getElementById('seasonSelectContainer').style.display = 'none';
     }
 
-    loadServer(currentServerIndex);
+    const pin = pinnedStreamFor(currentStreamItem);
+    renderPinnedServerTab(pin);
+    if (pin) {
+        loadPinnedStream(pin);
+    } else {
+        loadServer(currentServerIndex);
+    }
     loadTrailer(item);
 }
 
@@ -3164,8 +3182,97 @@ async function loadEpisodes(tvId, seasonNum) {
     }
 }
 
+// Keep the selected server pill on screen. The strip scrolls horizontally and
+// with 13 servers the active one can sit entirely outside the visible area, so
+// the modal shows no indication of which server is playing.
+function keepActiveTabVisible(activeTab) {
+    if (!activeTab) return;
+    const strip = activeTab.parentElement;
+    if (!strip || strip.scrollWidth <= strip.clientWidth) return;
+    // Next frame: the modal's entry animation rescales it, so a rect measured
+    // in the same tick as the class change is a few pixels off.
+    requestAnimationFrame(() => {
+        activeTab.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' });
+    });
+}
+
+// Per-title overrides for providers that only serve individual uploaded files.
+// PlayDrive (playdrive.vip) is an embed-only host: its player is keyed by an
+// upload slug (/e/{slug}), and every title-shaped route answers 404 — /movie/603,
+// /tv/1399/1/1, /e/603, /e/tt0133093, /embed/movie/603 (checked 2026-11-07).
+// So it cannot build a URL from a TMDB id; it is pinned to the one title it has,
+// and it opens as the first server for that title only. The page sends
+// `frame-ancestors *` with no X-Frame-Options, so it embeds fine.
+const PINNED_STREAMS = {
+    // 1368337 = The Odyssey (2026), the upload titled
+    // "The Odyssey (2026) · Hindi, Tamil, Telugu, English — HDHub4u".
+    'movie:1368337': {
+        name: 'PlayDrive',
+        url: 'https://playdrive.vip/e/AQIDM6IAAsNimQ',
+        note: 'carries Hindi, Tamil, Telugu and English audio — pick the track in its player'
+    }
+};
+
+function pinnedStreamFor(item) {
+    if (!item || item.id == null) return null;
+    return PINNED_STREAMS[item.media_type + ':' + item.id] || null;
+}
+
+// The pinned pill is not a .server-tab on purpose: every existing loop reads a
+// .server-tab as an index into STREAMING_SERVERS, and a pinned entry has none.
+function renderPinnedServerTab(pin) {
+    const strip = document.querySelector('.server-tabs:not(.anime-server-tabs)');
+    if (!strip) return;
+    let tab = document.getElementById('pinnedServerTab');
+    if (!pin) {
+        if (tab) tab.remove();
+        return;
+    }
+    if (!tab) {
+        tab = document.createElement('button');
+        tab.id = 'pinnedServerTab';
+        tab.type = 'button';
+        tab.className = 'server-tab-pin';
+        tab.addEventListener('click', () => {
+            const current = pinnedStreamFor(currentStreamItem);
+            if (current) loadPinnedStream(current);
+        });
+        strip.prepend(tab);
+    }
+    tab.textContent = pin.name;
+    tab.title = pin.name + ': ' + pin.note;
+}
+
+function setPinnedTabActive(on) {
+    const tab = document.getElementById('pinnedServerTab');
+    if (tab) tab.classList.toggle('active', !!on);
+}
+
+function loadPinnedStream(pin) {
+    const frame = document.getElementById('streamFrame');
+    const errorMsg = document.getElementById('serverError');
+    if (!frame || !pin) return;
+    frame.src = pin.url;
+    frame.style.display = 'block';
+    errorMsg.style.display = 'none';
+    // Only the pinned pill may look selected: a leftover highlight on a real
+    // server pill would claim two players are active at once.
+    document.querySelectorAll('.server-tab').forEach(tab => tab.classList.remove('active'));
+    setPinnedTabActive(true);
+    const hint = document.getElementById('playerHint');
+    if (hint) {
+        hint.style.display = 'flex';
+        hint.className = 'player-hint supports-audio';
+        hint.innerHTML = '<i class="fas fa-volume-high"></i><span><strong>' + pin.name +
+            '</strong> — ' + pin.note + '.</span>';
+    }
+    renderDownloadSources(currentStreamItem.media_type === 'anime' ? 'anime' : (currentStreamItem.media_type === 'tv' ? 'tv' : 'movie'));
+    keepActiveTabVisible(document.getElementById('pinnedServerTab'));
+}
+
 // Load streaming server
 function loadServer(index, opts = {}) {
+    setPinnedTabActive(false);
     const prevIndex = currentServerIndex;
     currentServerIndex = index;
     const frame = document.getElementById('streamFrame');
@@ -3187,6 +3294,7 @@ function loadServer(index, opts = {}) {
         document.querySelectorAll('.server-tab').forEach((tab, i) => {
             tab.classList.toggle('active', tabServerIndex(tab, i) === prevIndex);
         });
+        keepActiveTabVisible(document.querySelector('.server-tab.active'));
         return;
     }
 
@@ -3233,6 +3341,7 @@ function loadServer(index, opts = {}) {
     document.querySelectorAll('.server-tab').forEach((tab, i) => {
         tab.classList.toggle('active', tabServerIndex(tab, i) === index);
     });
+    keepActiveTabVisible(document.querySelector('.server-tab.active'));
 }
 
 // Open a player page in a new tab. VidSrc.su is the verified-live player
@@ -3320,6 +3429,7 @@ function closeStream() {
     modal.classList.remove('active');
     if (lastModalTrigger && typeof lastModalTrigger.focus === 'function') lastModalTrigger.focus();
     lastModalTrigger = null;
+    renderPinnedServerTab(null);
     streamFrame.src = '';
     streamFrame.style.display = 'block';
     trailerFrame.src = '';
